@@ -8,18 +8,15 @@
   <link rel="dns-prefetch" href="https://songyoulin.github.io">
   <title>memeory barrier | </title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="cache 一致性协议 MESI在单核的cache中，每一个cache line有两个状态：dirty和valid。它描述了cache和memory之间的数据关系，而在多核处理器中，会共享一些其他的数据信息，MESI就包含了共享态的描述。在MESI协议中，每个cache的cache控制器不仅知道自己的读写操作，而且也监听其他cache的读写。  M(Modified)：这行数据有效，数据被修改了">
-<meta name="keywords" content="linux kernel,memeory,cache">
+  <meta name="keywords" content="linux kernel,memeory,cache">
 <meta property="og:type" content="article">
 <meta property="og:title" content="memeory barrier">
 <meta property="og:url" content="https://songyoulin.github.io/2016/02/12/memory_barrier/index.html">
 <meta property="og:site_name">
-<meta property="og:description" content="cache 一致性协议 MESI在单核的cache中，每一个cache line有两个状态：dirty和valid。它描述了cache和memory之间的数据关系，而在多核处理器中，会共享一些其他的数据信息，MESI就包含了共享态的描述。在MESI协议中，每个cache的cache控制器不仅知道自己的读写操作，而且也监听其他cache的读写。  M(Modified)：这行数据有效，数据被修改了">
 <meta property="og:locale" content="default">
-<meta property="og:updated_time" content="2018-04-30T12:06:48.927Z">
+<meta property="og:updated_time" content="2018-04-30T14:58:34.380Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="memeory barrier">
-<meta name="twitter:description" content="cache 一致性协议 MESI在单核的cache中，每一个cache line有两个状态：dirty和valid。它描述了cache和memory之间的数据关系，而在多核处理器中，会共享一些其他的数据信息，MESI就包含了共享态的描述。在MESI协议中，每个cache的cache控制器不仅知道自己的读写操作，而且也监听其他cache的读写。  M(Modified)：这行数据有效，数据被修改了">
   
     <link rel="alternative" href="/atom.xml" title="" type="application/atom+xml">
   
@@ -171,7 +168,9 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <a id="more"></a>
+        <blockquote>
+</blockquote>
+<a id="more"></a>
 <h2 id="cache-一致性协议-MESI"><a href="#cache-一致性协议-MESI" class="headerlink" title="cache 一致性协议 MESI"></a>cache 一致性协议 MESI</h2><p>在单核的cache中，每一个cache line有两个状态：dirty和valid。它描述了cache和memory之间的数据关系，而在多核处理器中，会共享一些其他的数据信息，MESI就包含了共享态的描述。在MESI协议中，每个cache的cache控制器不仅知道自己的读写操作，而且也监听其他cache的读写。</p>
 <blockquote>
 <p>M(Modified)：这行数据有效，数据被修改了，和内存中的数据不一致，数据只存在于本Cache中。<br>E(Exclusive)：这行数据有效，数据和内存中的数据一致，数据只存在于本Cache中。<br>S(Shared)：这行数据有效，数据和内存中的数据一致，数据存在于很多Cache中。<br>I(Invalid)：这行数据是空的换句话说，它没有保存任何有效数据。当新数据进入缓存时，它被放置到一个处于“invalid”状态的缓存行。</p>
