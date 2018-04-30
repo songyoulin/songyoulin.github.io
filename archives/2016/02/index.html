@@ -6,11 +6,11 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://songyoulin.github.io">
-  <title></title>
+  <title>Archives: 2016/2 | </title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta property="og:type" content="website">
 <meta property="og:title">
-<meta property="og:url" content="https://songyoulin.github.io/index.html">
+<meta property="og:url" content="https://songyoulin.github.io/archives/2016/02/index.html">
 <meta property="og:site_name">
 <meta property="og:locale" content="default">
 <meta name="twitter:card" content="summary">
@@ -144,180 +144,34 @@
           <div id="js-content" class="content-ll">
             
   
-    <article id="post-memory barrier" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
+  
     
-      <header class="article-header">
-        
+    
+      
+      
+      <section class="archives-wrap">
+        <div class="archive-year-wrap">
+          <a href="/archives/2016" class="archive-year">2016</a>
+        </div>
+        <div class="archives">
+    
+    <article class="archive-article archive-type-post">
+  <div class="archive-article-inner">
+    <header class="archive-article-header">
+      	<div class="article-meta">
+	      	<a href="/2016/02/12/memory barrier/" class="archive-article-date">
+  	<time datetime="2016-02-12T00:55:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2016-02-12</time>
+</a>
+        </div>
+    	 
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2016/02/12/memory barrier/">memeory barrier</a>
+      <a class="archive-article-title" href="/2016/02/12/memory barrier/">memeory barrier</a>
     </h1>
   
 
-        
-        <a href="/2016/02/12/memory barrier/" class="archive-article-date">
-  	<time datetime="2016-02-12T00:55:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2016-02-12</time>
-</a>
-        
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="cache-一致性协议-MESI"><a href="#cache-一致性协议-MESI" class="headerlink" title="cache 一致性协议 MESI"></a>cache 一致性协议 MESI</h2><p>在单核的cache中，每一个cache line有两个状态：dirty和valid。它描述了cache和memory之间的数据关系，而在多核处理器中，会共享一些其他的数据信息，MESI就包含了共享态的描述。在MESI协议中，每个cache的cache控制器不仅知道自己的读写操作，而且也监听其他cache的读写。</p>
-<blockquote>
-<p>M(Modified)：这行数据有效，数据被修改了，和内存中的数据不一致，数据只存在于本Cache中。<br>E(Exclusive)：这行数据有效，数据和内存中的数据一致，数据只存在于本Cache中。<br>S(Shared)：这行数据有效，数据和内存中的数据一致，数据存在于很多Cache中。<br>I(Invalid)：这行数据是空的换句话说，它没有保存任何有效数据。当新数据进入缓存时，它被放置到一个处于“invalid”状态的缓存行。</p>
-</blockquote>
-<h2 id="乱序执行"><a href="#乱序执行" class="headerlink" title="乱序执行"></a>乱序执行</h2><p>编译器在编译的时候、cpu在执行代码的时候都有可能将原来的语句乱序排列或者执行。乱序执行的目的是为了提高执行效率，编译器和cpu只保证以下原则。</p>
-<blockquote>
-<p>不可修改单线程程序的行为</p>
-</blockquote>
-<p>这里的单线程可能不包含中断，也就是说，中断里执行的语句在行为上也算是一个线程。在多线程编程的时候，编译器和cpu是不保证程序的行为的。</p>
-<h4 id="Ⅰ-编译器乱序"><a href="#Ⅰ-编译器乱序" class="headerlink" title="Ⅰ. 编译器乱序"></a>Ⅰ. 编译器乱序</h4><h6 id="1-编译器乱序的例子1："><a href="#1-编译器乱序的例子1：" class="headerlink" title="1. 编译器乱序的例子1："></a>1. 编译器乱序的例子1：</h6><p>有如下代码 reorder.c：</p>
-<pre><code>int a = 0, b = 0;
-
-void reorder()
-{
-    a = b + 100;
-    b = 0;
-}
-</code></pre><p>如果用<code>gcc -S reorder.c</code>编译出来的reorder.s文件为：</p>
-<pre><code>...
-movl    b(%rip), %eax
-addl    $100, %eax
-movl    %eax, a(%rip)
-movl    $0, b(%rip)
-...
-</code></pre><p>如果用<code>gcc -S reorder.c -O2</code>编译出来的reorder.s文件为：</p>
-<pre><code>...
-movl    b(%rip), %eax
-movl    $0, b(%rip)
-addl    $100, %eax
-movl    %eax, a(%rip)
-...
-</code></pre><p>可以看到加了<code>-O2</code>选项之后编译器把<code>movl $0, b(%rip)</code>这句话的顺序调整了一下，放在了<code>movl b(%rip), %eax</code>之后，这样的结果是，<code>b</code>的值先变成0，然后<code>a</code>的值才变成100，编译器打乱了<code>a</code>和<code>b</code>赋值的顺序，这就是乱序执行。编译器为什么会这么做呢？因为<code>CPU</code>在执行两条相邻的语句的时候，发生<code>cache miss</code>的概率要比在执行不相邻的语句的时候的概率小。在执行第一条语句<code>movl b(%rip), %eax</code>时，CPU要把<code>b</code>这个变量从内存里读到<code>cache</code>里，由于<code>cache</code>的大小有限，随着<code>CPU</code>执行的语句越来越多，<code>cache</code>里存放的变量也越来越多，最终变量<code>b</code>会从<code>cache</code>里被移除，这样子下次再访问变量<code>b</code>的时候，<code>CPU</code>必须重新把内存里的变量<code>b</code>读回到<code>cache</code>里，这样就从内存里读了两次变量<code>b</code>的值，因为访问<code>cache</code>的速度远大于访问内存的速度，频繁的访问内存造成的结果就是性能下降。</p>
-<h6 id="2-编译器乱序的例子2："><a href="#2-编译器乱序的例子2：" class="headerlink" title="2. 编译器乱序的例子2："></a>2. 编译器乱序的例子2：</h6><pre><code>int g_flags = 0x43;
-
-int main(void)
-{
-    int a = 0;
-
-    while(1)
-    {
-        if(g_flags &gt; 0)
-            a = 0xbeef;
-        else
-        {
-            a = 0xfeed;
-            break;
-        }
-    }
-
-    return a;
-}
-</code></pre><p>普通编译，没有问题：</p>
-<pre><code>Disassembly of section .text:
-
-000100d8 &lt;main&gt;:
-    100d8:    e52db004     push    {fp}        ; (str fp, [sp, #-4]!)
-    100dc:    e28db000     add    fp, sp, #0
-    100e0:    e24dd00c     sub    sp, sp, #12
-    100e4:    e3a03000     mov    r3, #0
-    100e8:    e50b3008     str    r3, [fp, #-8]
-    100ec:    e59f3034     ldr    r3, [pc, #52]    ; 10128 &lt;main+0x50&gt;
-    100f0:    e5933000     ldr    r3, [r3]
-    100f4:    e3530000     cmp    r3, #0
-    100f8:    da000002     ble    10108 &lt;main+0x30&gt;
-    100fc:    e59f3028     ldr    r3, [pc, #40]    ; 1012c &lt;main+0x54&gt;
-    10100:    e50b3008     str    r3, [fp, #-8]
-    10104:    eafffff8     b    100ec &lt;main+0x14&gt;
-    10108:    e59f3020     ldr    r3, [pc, #32]    ; 10130 &lt;main+0x58&gt;
-    1010c:    e50b3008     str    r3, [fp, #-8]
-    10110:    e1a00000     nop            ; (mov r0, r0)
-    10114:    e51b3008     ldr    r3, [fp, #-8]
-    10118:    e1a00003     mov    r0, r3
-    1011c:    e24bd000     sub    sp, fp, #0
-    10120:    e49db004     pop    {fp}        ; (ldr fp, [sp], #4)
-    10124:    e12fff1e     bx    lr
-    10128:    00020134     andeq    r0, r2, r4, lsr r1
-    1012c:    0000beef     andeq    fp, r0, pc, ror #29
-    10130:    0000feed     andeq    pc, r0, sp, ror #29
-
-Disassembly of section .data:
-
-00020134 &lt;g_flags&gt;:
-    20134:    00000043     andeq    r0, r0, r3, asr #32
-</code></pre><p>如果编译的时候加上<code>-O3</code>，汇编代码如下：</p>
-<pre><code>Disassembly of section .text:
-
-000100d8 &lt;main&gt;:
-    100d8:    e59f3014     ldr    r3, [pc, #20]        ; 100f4 &lt;main+0x1c&gt;
-    100dc:    e5933000     ldr    r3, [r3]
-    100e0:    e3530000     cmp    r3, #0                ; 到这个地方，是先读取g_flags的值，在跟0进行比较
-    100e4:    da000000     ble    100ec &lt;main+0x14&gt;
-    100e8:    eafffffe     b    100e8 &lt;main+0x10&gt;   ；有可能卡死再这个地方再也出不来
-    100ec:    e59f0004     ldr    r0, [pc, #4]        ; 100f8 &lt;main+0x20&gt;
-    100f0:    e12fff1e     bx    lr
-    100f4:    000200fc     strdeq    r0, [r2], -ip
-    100f8:    0000feed     andeq    pc, r0, sp, ror #29
-
-Disassembly of section .data:
-
-000200fc &lt;g_flags&gt;:
-    200fc:    00000043     andeq    r0, r0, r3, asr #32
-</code></pre><p>可以看出来，是先读取<code>g_flags</code>的值，再跟0进行比较，在进入的<code>while</code>循环。有可能卡在<code>while</code>循环里。这样子代码变成了如下：<br>​<br>    int g_flags = 0x43;</p>
-<pre><code>int main(void)
-{
-    int tmp = g_flags;
-    int a = 0xfeed;
-
-    while(g_flags) { }
-
-    return a;
-}
-</code></pre><p>这样子即使在另一个线程里修改了全局变量<code>g_flags</code>的值，函数结果也不会发生变化。</p>
-<p>编译器乱序的目的是为了优化执行效率，所以，会有很多造成乱序的原因。上面只是造成乱序的两个例子。</p>
-<h6 id="2-如何让编译器不乱序"><a href="#2-如何让编译器不乱序" class="headerlink" title="2. 如何让编译器不乱序"></a>2. 如何让编译器不乱序</h6><p>让编译器不乱序有几个方法：</p>
-<blockquote>
-<p>A. 编译器编译时不要加优化选项，编译出来的结果是默认不乱序的。<br>B. 在变量上加volatile，有关此变量的语句都不会乱序。volatile是强制编译器不能优化对这些变量的操作。<br>C. 编译器层面的内存屏障<code>asm volatile(&quot;&quot; ::: &quot;memory&quot;);</code> 或者 <code>__asm__ __volatile__ (&quot;&quot; ::: &quot;memory&quot;);</code></p>
-</blockquote>
-<h4 id="Ⅱ-CPU乱序执行"><a href="#Ⅱ-CPU乱序执行" class="headerlink" title="Ⅱ. CPU乱序执行"></a>Ⅱ. CPU乱序执行</h4><h6 id="1-编译器乱序的原因："><a href="#1-编译器乱序的原因：" class="headerlink" title="1. 编译器乱序的原因："></a>1. 编译器乱序的原因：</h6><p>A，由于cache的同步而导致的</p>
-<pre><code>int g_value = 0;
-int g_valueSetflag = 0;
-
-
-void core1_setValue(int value)
-{
-    g_value = value;
-    g_valueSetflag = 1;
-}
-
-
-int core2_waitForValueChange()
-{
-    while(1 ！= g_valueSetflag);
-
-    return g_value;
-}
-</code></pre><p>假设cpu有两个core, core1在执行函数<code>core1_setValue</code>，core2在执行函数<code>core2_waitForValueChange</code>,如果core2在之前访问过<code>g_value</code>，并且把<code>g_value</code>还保持在本地cache里，那么在core1在执行函数<code>core1_setValue</code>的时候，根据MESI，需要把core1本地cache里的<code>g_value</code>更改之外，还需要通知core2，让core2知道本地cache里的<code>g_value</code>已经被改变，并发送回应信号给core1，但是这个过程会很长，cpu为了减小这个时间的影响，会在core2回相应信号给core1前，继续执行下面对<code>g_value</code>没有依赖的语句<code>g_valueSetflag = 1;</code>，这样子在core2看来就会出现返回的<code>g_value</code>跟实际的value不同的情况。</p>
-<p>B，超线程、smt等技术，当一个core在执行一段代码，但是另一个core却闲置时，cpu会把core1上一些独立的没有依赖的语句去放到其他的core上执行。例如：</p>
-<pre><code>if(i &lt; 0)
-{
-    a = b + c;
-}
-else
-{
-    a = d + e;
-}
-</code></pre><p>cpu有时候会让core1执行<code>a = b + c;</code>，core2执行<code>a = d + e;</code>，然后再根据i的值直接去取结果。</p>
-
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      
+        <div class="article-info info-on-right">
+          
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags icon"></i>
 		<ul class="article-tag-list">
@@ -337,41 +191,19 @@ else
 		</ul>
 	</div>
 
-      
+          
 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2016/02/12/memory barrier/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
+        </div>
+        <div class="clearfix"></div>
+    </header>
   </div>
 </article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
   
   
+    </div></section>
+  
+
+    
 
 
           </div>
@@ -393,9 +225,9 @@ else
     <script>
 	var yiliaConfig = {
 		mathjax: false,
-		isHome: true,
+		isHome: false,
 		isPost: false,
-		isArchive: false,
+		isArchive: true,
 		isTag: false,
 		isCategory: false,
 		open_in_new: false,

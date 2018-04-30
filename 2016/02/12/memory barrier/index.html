@@ -6,15 +6,20 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://songyoulin.github.io">
-  <title></title>
+  <title>memeory barrier | </title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title">
-<meta property="og:url" content="https://songyoulin.github.io/index.html">
+  <meta name="description" content="cache 一致性协议 MESI在单核的cache中，每一个cache line有两个状态：dirty和valid。它描述了cache和memory之间的数据关系，而在多核处理器中，会共享一些其他的数据信息，MESI就包含了共享态的描述。在MESI协议中，每个cache的cache控制器不仅知道自己的读写操作，而且也监听其他cache的读写。  M(Modified)：这行数据有效，数据被修改了，">
+<meta name="keywords" content="linux kernel,memeory,cache">
+<meta property="og:type" content="article">
+<meta property="og:title" content="memeory barrier">
+<meta property="og:url" content="https://songyoulin.github.io/2016/02/12/memory barrier/index.html">
 <meta property="og:site_name">
+<meta property="og:description" content="cache 一致性协议 MESI在单核的cache中，每一个cache line有两个状态：dirty和valid。它描述了cache和memory之间的数据关系，而在多核处理器中，会共享一些其他的数据信息，MESI就包含了共享态的描述。在MESI协议中，每个cache的cache控制器不仅知道自己的读写操作，而且也监听其他cache的读写。  M(Modified)：这行数据有效，数据被修改了，">
 <meta property="og:locale" content="default">
+<meta property="og:updated_time" content="2018-04-30T11:44:21.680Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title">
+<meta name="twitter:title" content="memeory barrier">
+<meta name="twitter:description" content="cache 一致性协议 MESI在单核的cache中，每一个cache line有两个状态：dirty和valid。它描述了cache和memory之间的数据关系，而在多核处理器中，会共享一些其他的数据信息，MESI就包含了共享态的描述。在MESI协议中，每个cache的cache控制器不仅知道自己的读写操作，而且也监听其他cache的读写。  M(Modified)：这行数据有效，数据被修改了，">
   
     <link rel="alternative" href="/atom.xml" title="" type="application/atom+xml">
   
@@ -142,16 +147,14 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
-  
-    <article id="post-memory barrier" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+            <article id="post-memory barrier" class="article article-type-post " itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <header class="article-header">
         
   
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/02/12/memory barrier/">memeory barrier</a>
+    <h1 class="article-title" itemprop="name">
+      memeory barrier
     </h1>
   
 
@@ -314,6 +317,37 @@ else
       
 
       
+        <div class="page-reward">
+          <a href="javascript:;" class="page-reward-btn tooltip-top">
+            <div class="tooltip tooltip-east">
+            <span class="tooltip-item">
+              赏
+            </span>
+            <span class="tooltip-content">
+              <span class="tooltip-text">
+                <span class="tooltip-inner">
+                  <p class="reward-p"><i class="icon icon-quo-left"></i>谢谢你请我吃糖果<i class="icon icon-quo-right"></i></p>
+                  <div class="reward-box">
+                    
+                    <div class="reward-box-item">
+                      <img class="reward-img" src="/assets/img/alipay.jpg">
+                      <span class="reward-type">支付宝</span>
+                    </div>
+                    
+                    
+                    <div class="reward-box-item">
+                      <img class="reward-img" src="/assets/img/weixinpay.jpg">
+                      <span class="reward-type">微信</span>
+                    </div>
+                    
+                  </div>
+                </span>
+              </span>
+            </span>
+          </div>
+          </a>
+        </div>
+      
     </div>
     <div class="article-info article-info-index">
       
@@ -340,16 +374,65 @@ else
       
 
       
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2016/02/12/memory barrier/">展开全文 >></a>
-        </p>
-      
 
+      
+        
+<div class="share-btn share-icons tooltip-left">
+  <div class="tooltip tooltip-east">
+    <span class="tooltip-item">
+      <a href="javascript:;" class="share-sns share-outer">
+        <i class="icon icon-share"></i>
+      </a>
+    </span>
+    <span class="tooltip-content">
+      <div class="share-wrap">
+        <div class="share-icons">
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="icon icon-weibo"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="icon icon-weixin"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="icon icon-qq"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="icon icon-douban"></i>
+          </a>
+          <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a>
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="icon icon-facebook"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="icon icon-twitter"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="icon icon-google"></i>
+          </a>
+        </div>
+      </div>
+    </span>
+  </div>
+</div>
+
+<div class="page-modal wx-share js-wx-box">
+    <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//pan.baidu.com/share/qrcode?url=https://songyoulin.github.io/2016/02/12/memory barrier/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div class="mask js-mask"></div>
       
       <div class="clearfix"></div>
     </div>
   </div>
 </article>
+
+  
 
 <aside class="wrap-side-operation">
     <div class="mod-side-operation">
@@ -369,8 +452,30 @@ else
 
 
 
+  
+  
+  
 
   
+
+  
+
+  
+  <div id="gitment-ctn"></div> 
+<link rel="stylesheet" href="//imsun.github.io/gitment/style/default.css">
+<script src="//imsun.github.io/gitment/dist/gitment.browser.js"></script>
+<script>
+var gitment = new Gitment({
+  id: "https://songyoulin.github.io/2016/02/12/memory barrier/",
+  owner: 'songyoulin',
+  repo: 'songyoulin.github.io',
+  oauth: {
+    client_id: '63078b0f95950e05f5bb',
+    client_secret: 'b24e1278d5a950e5fa5d79e9fc27738a4f548f9e',
+  },
+})
+gitment.render('gitment-ctn')
+</script>
   
 
 
@@ -393,8 +498,8 @@ else
     <script>
 	var yiliaConfig = {
 		mathjax: false,
-		isHome: true,
-		isPost: false,
+		isHome: false,
+		isPost: true,
 		isArchive: false,
 		isTag: false,
 		isCategory: false,
