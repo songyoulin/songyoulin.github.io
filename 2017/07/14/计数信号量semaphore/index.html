@@ -8,18 +8,15 @@
   <link rel="dns-prefetch" href="https://songyoulin.github.io">
   <title> linux同步和互斥 | SuperSong的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="I. 计数信号量数据结构计数信号量数据结构semaphore定义如下： struct semaphore {     raw_spinlock_t   lock;     unsigned int     count;     struct list_head wait_list; }; lock：是一个spinlock，对count和wait_list的操作进行保护。count：是表示允许进入">
-<meta name="keywords" content="linux">
+  <meta name="keywords" content="linux">
 <meta property="og:type" content="article">
 <meta property="og:title" content=" linux同步和互斥">
 <meta property="og:url" content="https://songyoulin.github.io/2017/07/14/计数信号量semaphore/index.html">
 <meta property="og:site_name" content="SuperSong的博客">
-<meta property="og:description" content="I. 计数信号量数据结构计数信号量数据结构semaphore定义如下： struct semaphore {     raw_spinlock_t   lock;     unsigned int     count;     struct list_head wait_list; }; lock：是一个spinlock，对count和wait_list的操作进行保护。count：是表示允许进入">
 <meta property="og:locale" content="default">
-<meta property="og:updated_time" content="2018-05-02T05:50:29.995Z">
+<meta property="og:updated_time" content="2018-05-02T06:02:08.375Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content=" linux同步和互斥">
-<meta name="twitter:description" content="I. 计数信号量数据结构计数信号量数据结构semaphore定义如下： struct semaphore {     raw_spinlock_t   lock;     unsigned int     count;     struct list_head wait_list; }; lock：是一个spinlock，对count和wait_list的操作进行保护。count：是表示允许进入">
   
     <link rel="alternative" href="/atom.xml" title="SuperSong的博客" type="application/atom+xml">
   
@@ -171,7 +168,9 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <a id="more"></a>
+        <blockquote>
+</blockquote>
+<a id="more"></a>
 <h1 id="I-计数信号量数据结构"><a href="#I-计数信号量数据结构" class="headerlink" title="I. 计数信号量数据结构"></a>I. 计数信号量数据结构</h1><p>计数信号量数据结构<code>semaphore</code>定义如下：</p>
 <pre><code>struct semaphore {
     raw_spinlock_t   lock;

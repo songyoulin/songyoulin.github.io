@@ -6,19 +6,19 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://songyoulin.github.io">
-  <title>mutex原子操作 | SuperSong的博客</title>
+  <title>mutex互斥锁 | SuperSong的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="本文介绍linux中互斥锁Mutex的实现。以及spinlock的优化MCS锁在Linux的实现方式osq锁。">
 <meta name="keywords" content="linux">
 <meta property="og:type" content="article">
-<meta property="og:title" content="mutex原子操作">
+<meta property="og:title" content="mutex互斥锁">
 <meta property="og:url" content="https://songyoulin.github.io/2017/08/17/互斥锁mutex/index.html">
 <meta property="og:site_name" content="SuperSong的博客">
 <meta property="og:description" content="本文介绍linux中互斥锁Mutex的实现。以及spinlock的优化MCS锁在Linux的实现方式osq锁。">
 <meta property="og:locale" content="default">
-<meta property="og:updated_time" content="2018-05-02T05:53:21.047Z">
+<meta property="og:updated_time" content="2018-05-02T06:01:21.683Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="mutex原子操作">
+<meta name="twitter:title" content="mutex互斥锁">
 <meta name="twitter:description" content="本文介绍linux中互斥锁Mutex的实现。以及spinlock的优化MCS锁在Linux的实现方式osq锁。">
   
     <link rel="alternative" href="/atom.xml" title="SuperSong的博客" type="application/atom+xml">
@@ -158,7 +158,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      mutex原子操作
+      mutex互斥锁
     </h1>
   
 
@@ -172,8 +172,9 @@
     <div class="article-entry" itemprop="articleBody">
       
         <blockquote>
-<p>本文介绍<code>linux</code>中互斥锁<code>Mutex</code>的实现。以及<code>spinlock</code>的优化<code>MCS</code>锁在<code>Linux</code>的实现方式<code>osq</code>锁。<br><a id="more"></a></p>
+<p>本文介绍<code>linux</code>中互斥锁<code>Mutex</code>的实现。以及<code>spinlock</code>的优化<code>MCS</code>锁在<code>Linux</code>的实现方式<code>osq</code>锁。</p>
 </blockquote>
+<a id="more"></a>
 <h1 id="I-Mutex简述"><a href="#I-Mutex简述" class="headerlink" title="I. Mutex简述"></a>I. <code>Mutex</code>简述</h1><p><code>Mutex</code>锁实现了自旋等待的机制，其整体思路是当发现锁的持有者执行临界区代码时，并且没有其他优先级高的进程要被调度执行时，就认为这个锁会马上释放。所以这种情况的时候，等待着不会选择睡眠，而是自旋等待锁的释放。内核通过<code>MCS</code>锁来实现只有一个等待者自旋而其他等待者睡眠的机制。<code>MCS</code>其实是一种自旋锁的优化方案，自旋锁在多处理器和<code>NUMA</code>系统中，因为多个处理器共享一个全局变量，锁的获取和释放都要修改这些全局变量，导致各个<code>CPU</code>的<code>cacheline</code>频繁的实效，这种<code>CPU cacheline</code>的颠簸行为(<code>bouncing</code>)严重了影响了性能。<code>MCS</code>可以解决自旋锁的<code>cpu cacheline bouncing</code>问题，但是由于内核中自旋锁经常被嵌入到一些重要的数据结构中，而这些数据结构往往要求占用比较少的内存(比如<code>struct page</code>)，所以<code>MCS</code>锁只用在读写信号量和<code>Mutex</code>中。<code>MCS</code>锁在内核中的具体实现为<code>struct optimistic_spin_queue osq</code>锁。</p>
 <h1 id="II-osq锁的实现"><a href="#II-osq锁的实现" class="headerlink" title="II. osq锁的实现"></a>II. <code>osq</code>锁的实现</h1><h2 id="一-osq的数据结构"><a href="#一-osq的数据结构" class="headerlink" title="一. osq的数据结构"></a>一. <code>osq</code>的数据结构</h2><pre><code>struct optimistic_spin_node {   
     struct optimistic_spin_node *next, *prev;

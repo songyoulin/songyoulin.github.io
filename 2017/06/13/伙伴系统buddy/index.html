@@ -16,7 +16,7 @@
 <meta property="og:site_name" content="SuperSong的博客">
 <meta property="og:description" content="基于linux-4.15介绍buddy原理，以及buddy主要的api的实现过程和原理">
 <meta property="og:locale" content="default">
-<meta property="og:updated_time" content="2018-05-02T05:51:07.956Z">
+<meta property="og:updated_time" content="2018-05-02T06:01:14.529Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="伙伴系统">
 <meta name="twitter:description" content="基于linux-4.15介绍buddy原理，以及buddy主要的api的实现过程和原理">
@@ -172,8 +172,9 @@
     <div class="article-entry" itemprop="articleBody">
       
         <blockquote>
-<p>基于<code>linux-4.15</code>介绍<code>buddy</code>原理，以及<code>buddy</code>主要的<code>api</code>的实现过程和原理<br><a id="more"></a></p>
+<p>基于<code>linux-4.15</code>介绍<code>buddy</code>原理，以及<code>buddy</code>主要的<code>api</code>的实现过程和原理</p>
 </blockquote>
+<a id="more"></a>
 <h1 id="I-简述"><a href="#I-简述" class="headerlink" title="I. 简述"></a>I. 简述</h1><p><code>linux</code>内核用<code>buddy</code>来管理物理内存页。<code>buddy</code>是基于每一个<code>zone</code>进行管理的。每一个<code>zone</code>中有一个<code>free_area</code>数组来管理这个<code>zone</code>中的所有空闲页面。<code>struct free_area free_area[MAX_ORDER]</code>。<code>MAX_ORDER</code>的值一般是<code>11</code>，这个数字的用意是<code>buddy</code>把所有的物理页面按照<code>2</code>的<code>n</code>次幂来管理：<code>1</code>、 <code>2</code>、 <code>4</code>、 <code>8</code>、 <code>16</code>、 <code>32</code>、 <code>64</code>、 <code>128</code>、 <code>256</code>、 <code>512</code>、 <code>1024</code>。其最大值是<code>1024</code>即<code>2</code>的<code>MAX_ORDER - 1</code>次方。<code>buddy</code>的厉害之处在于，所有的正整数都可以用<code>2</code>的<code>n</code>次幂的多项式之和来表示。比如，假设有现在有<code>1000</code>个物理页面，我们就可以用<code>512</code> + <code>256</code> + <code>128</code> + <code>64</code> + <code>32</code> + <code>8</code>来表示。<code>buddy</code>的申请和回收可以用下面的例子来简单的描述：</p>
 <ol>
 <li><p>假设空闲内存现在只有一个<code>16</code>页大小的<code>free_area</code>。</p>
