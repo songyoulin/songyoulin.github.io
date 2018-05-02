@@ -6,15 +6,19 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://songyoulin.github.io">
-  <title>Tag: linux | SuperSong的博客</title>
+  <title>SuperSong的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
+  <meta name="description" content="content{:toc}  本文介绍linux中互斥锁Mutex的实现。以及spinlock的优化MCS锁在Linux的实现方式osq锁。 I. Mutex简述Mutex锁实现了自旋等待的机制，其整体思路是当发现锁的持有者执行临界区代码时，并且没有其他优先级高的进程要被调度执行时，就认为这个锁会马上释放。所以这种情况的时候，等待着不会选择睡眠，而是自旋等待锁的释放。内核通过MCS锁来实现只有一">
+<meta property="og:type" content="article">
 <meta property="og:title" content="SuperSong的博客">
-<meta property="og:url" content="https://songyoulin.github.io/tags/linux/index.html">
+<meta property="og:url" content="https://songyoulin.github.io/2018/05/02/2018-03-24-互斥锁mutex/index.html">
 <meta property="og:site_name" content="SuperSong的博客">
+<meta property="og:description" content="content{:toc}  本文介绍linux中互斥锁Mutex的实现。以及spinlock的优化MCS锁在Linux的实现方式osq锁。 I. Mutex简述Mutex锁实现了自旋等待的机制，其整体思路是当发现锁的持有者执行临界区代码时，并且没有其他优先级高的进程要被调度执行时，就认为这个锁会马上释放。所以这种情况的时候，等待着不会选择睡眠，而是自旋等待锁的释放。内核通过MCS锁来实现只有一">
 <meta property="og:locale" content="default">
+<meta property="og:updated_time" content="2018-04-01T15:12:16.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="SuperSong的博客">
+<meta name="twitter:description" content="content{:toc}  本文介绍linux中互斥锁Mutex的实现。以及spinlock的优化MCS锁在Linux的实现方式osq锁。 I. Mutex简述Mutex锁实现了自旋等待的机制，其整体思路是当发现锁的持有者执行临界区代码时，并且没有其他优先级高的进程要被调度执行时，就认为这个锁会马上释放。所以这种情况的时候，等待着不会选择睡眠，而是自旋等待锁的释放。内核通过MCS锁来实现只有一">
   
     <link rel="alternative" href="/atom.xml" title="SuperSong的博客" type="application/atom+xml">
   
@@ -150,158 +154,733 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
-  
-  
+            <article id="post-2018-03-24-互斥锁mutex" class="article article-type-post " itemscope itemprop="blogPost">
+  <div class="article-inner">
     
-    
+    <div class="article-entry" itemprop="articleBody">
       
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2017" class="archive-year">2017</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2017/06/13/伙伴系统buddy/" class="archive-article-date">
-  	<time datetime="2017-06-13T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-06-13</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2017/06/13/伙伴系统buddy/">基于`linux-4.15`介绍`buddy`原理，以及`buddy`主要的`api`的实现过程和原理</a>
-    </h1>
-  
+        <ul>
+<li>content<br>{:toc}</li>
+</ul>
+<p>本文介绍<code>linux</code>中互斥锁<code>Mutex</code>的实现。以及<code>spinlock</code>的优化<code>MCS</code>锁在<code>Linux</code>的实现方式<code>osq</code>锁。</p>
+<h1 id="I-Mutex简述"><a href="#I-Mutex简述" class="headerlink" title="I. Mutex简述"></a>I. <code>Mutex</code>简述</h1><p><code>Mutex</code>锁实现了自旋等待的机制，其整体思路是当发现锁的持有者执行临界区代码时，并且没有其他优先级高的进程要被调度执行时，就认为这个锁会马上释放。所以这种情况的时候，等待着不会选择睡眠，而是自旋等待锁的释放。内核通过<code>MCS</code>锁来实现只有一个等待者自旋而其他等待者睡眠的机制。<code>MCS</code>其实是一种自旋锁的优化方案，自旋锁在多处理器和<code>NUMA</code>系统中，因为多个处理器共享一个全局变量，锁的获取和释放都要修改这些全局变量，导致各个<code>CPU</code>的<code>cacheline</code>频繁的实效，这种<code>CPU cacheline</code>的颠簸行为(<code>bouncing</code>)严重了影响了性能。<code>MCS</code>可以解决自旋锁的<code>cpu cacheline bouncing</code>问题，但是由于内核中自旋锁经常被嵌入到一些重要的数据结构中，而这些数据结构往往要求占用比较少的内存(比如<code>struct page</code>)，所以<code>MCS</code>锁只用在读写信号量和<code>Mutex</code>中。<code>MCS</code>锁在内核中的具体实现为<code>struct optimistic_spin_queue osq</code>锁。</p>
+<h1 id="II-osq锁的实现"><a href="#II-osq锁的实现" class="headerlink" title="II. osq锁的实现"></a>II. <code>osq</code>锁的实现</h1><h2 id="一-osq的数据结构"><a href="#一-osq的数据结构" class="headerlink" title="一. osq的数据结构"></a>一. <code>osq</code>的数据结构</h2><pre><code>struct optimistic_spin_node {   
+    struct optimistic_spin_node *next, *prev;
+    int locked; /* 1 if lock acquired */
+    int cpu; /* encoded CPU # + 1 value */
+};      
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
+struct optimistic_spin_queue {  
+    atomic_t tail;
+};
+</code></pre><p><code>optimistic_spin_node</code>表示本地<code>cpu</code>的节点。<code>next</code>和<code>prev</code>维护了一个双向链表，上面的链表记录了正在自旋等待的<code>cpu</code>。其中的<code>locked</code>表示加锁状态。<code>cpu</code>用于表示本地<code>CPU</code>的编号，表示该<code>node</code>处于哪个<code>CPU</code>上。0表示没有<code>CPU</code>，1表示<code>CPU0</code>，以此类推。</p>
+<p><code>optimistic_spin_node</code>会被定义成<code>per-CPU</code>类型的：</p>
+<pre><code>[kernel/locking/osq_lock.c]
+
+static DEFINE_PER_CPU_SHARED_ALIGNED(struct optimistic_spin_node, osq_node);
+</code></pre><p><code>optimistic_spin_queue</code>中的<code>tail</code>上面记录了哪个<code>cpu</code>最后在竞争这个锁。如果这个值不为0，说明有人在等待锁。</p>
+<h2 id="二-osq的初始化"><a href="#二-osq的初始化" class="headerlink" title="二. osq的初始化"></a>二. <code>osq</code>的初始化</h2><pre><code>#define OSQ_UNLOCKED_VAL (0)
+
+static inline void osq_lock_init(struct optimistic_spin_queue *lock)
+{
+    atomic_set(&amp;lock-&gt;tail, OSQ_UNLOCKED_VAL);
+}
+</code></pre><p>只是把<code>lock</code>中的<code>tail</code>成员初始化为0。</p>
+<h2 id="三-osq的加锁"><a href="#三-osq的加锁" class="headerlink" title="三. osq的加锁"></a>三. <code>osq</code>的加锁</h2><pre><code>bool osq_lock(struct optimistic_spin_queue *lock)
+{
+    //当前cpu的node
+    struct optimistic_spin_node *node = this_cpu_ptr(&amp;osq_node);
+    struct optimistic_spin_node *prev, *next;
+
+    //curr = smp_processor_id + 1 
+    int curr = encode_cpu(smp_processor_id());
+    int old;
+
+    node-&gt;locked = 0;
+    node-&gt;next = NULL;
+    node-&gt;cpu = curr;
+
+    //把lock-&gt;tail设置成curr，旧值返回给old
+    old = atomic_xchg(&amp;lock-&gt;tail, curr);
+
+    //如果之前是没有CPU获取到锁的，获取锁成功，返回true
+    if (old == OSQ_UNLOCKED_VAL)
+        return true;
+
+    //获取到上个cpu的node
+    prev = decode_cpu(old);
+
+    //设置当前node-&gt;prev为上一个cpu的node
+    node-&gt;prev = prev;
+
+    smp_wmb();
+
+    //上一个cpu的node-&gt;next设置为当前cpu的node
+    WRITE_ONCE(prev-&gt;next, node);
+
+    //一直查询当前node的locked是否为1，相当于自旋等待
+    while (!READ_ONCE(node-&gt;locked)) {
+
+        //在等待的过程中，如果有优先级更高的进程抢占或者被调度器要求调度出去，那就应该放弃自旋等待。
+        if (need_resched() || vcpu_is_preempted(node_cpu(node-&gt;prev)))
+                goto unqueue;
+
+        cpu_relax();
+    }
+    return true;
+
+unqueue:
+
+    for (;;) {
+
+        //无锁操作，把prev-&gt;next设置成null
+        if (prev-&gt;next == node &amp;&amp;
+            cmpxchg(&amp;prev-&gt;next, node, NULL) == node)
+            break;
+
+        //如果当前的locked被置成1，说明上一个cpu释放了锁，自己获取到了锁
+        if (smp_load_acquire(&amp;node-&gt;locked))
+            return true;
+
+        cpu_relax();
+
+        //重新获prev，防止其他地方修改链表
+        prev = READ_ONCE(node-&gt;prev);
+    }
+
+    next = osq_wait_next(lock, node, prev);
+    if (!next)
+        return false;
+
+    WRITE_ONCE(next-&gt;prev, prev);
+    WRITE_ONCE(prev-&gt;next, next);
+
+    return false;
+}
+</code></pre><p>如果获取锁失败，将本节点从链表中移除，上述代码<code>for(;;)</code>中是用无锁代码处理了<code>pre</code>节点的<code>next</code>指针的指向，<code>osq_wait_next</code>是用无锁代码处理当前<code>node</code>的<code>next</code>指针的问题。最后如果<code>next</code>的值不是0，那就把<code>next</code>的<code>prev</code>设置成当前<code>node</code>的<code>prev</code>，<code>next</code>设置成当前<code>node</code>的<code>next</code>。</p>
+<p>上面的<code>osq_lock</code>可以归结为以下步骤：</p>
+<ol>
+<li>如果<code>lock-&gt;tail</code>的值为<code>OSQ_UNLOCKED_VAL</code>直接拿到锁。反之向下</li>
+<li>自旋，一直查询自己是否拿到锁。</li>
+<li>自选的过程中，如果有优先级更高的进程抢占或者被调度器要求调度出去，那就应该放弃自旋等待。</li>
+<li>放弃自旋等待后，通过无锁数据结构把当前的<code>node</code>从链表中移除。</li>
+</ol>
+<h2 id="四-osq的解锁"><a href="#四-osq的解锁" class="headerlink" title="四. osq的解锁"></a>四. <code>osq</code>的解锁</h2><pre><code>void osq_unlock(struct optimistic_spin_queue *lock)
+{
+    struct optimistic_spin_node *node, *next;
+    int curr = encode_cpu(smp_processor_id());
+
+    //如果tail为0，说明没有人竞争该锁，直接把tail设置成0，返回
+    if (likely(atomic_cmpxchg_release(&amp;lock-&gt;tail, curr,
+                                      OSQ_UNLOCKED_VAL) == curr))
+            return;
+
+    //反之有人竞争锁，获取当前node
+    node = this_cpu_ptr(&amp;osq_node);
+
+    //把当前node的next设置成0，并返回之前next
+    next = xchg(&amp;node-&gt;next, NULL);
+
+    //如果next不为0，说明有cpu在自旋等待锁
+    if (next) {
+            //把next-&gt;locked置为1，让他获取锁
+            WRITE_ONCE(next-&gt;locked, 1);
+            return;
+    }
+
+    //把当前node移除队列，设置next的prev，并返回next
+    next = osq_wait_next(lock, node, NULL);
+    //这时再判断一下next是否有值，有值得话说明有cpu在自选等待，
+    //设置next的Locked
+    if (next)
+            WRITE_ONCE(next-&gt;locked, 1);
+}
+</code></pre><p><code>osq_unlock</code>的代码可以总结为如下：</p>
+<ol>
+<li>如果<code>tail</code>为0，说明没有人竞争该锁，直接把<code>tail</code>设置成0，返回。反之向下。</li>
+<li>如果有人竞争锁，判断是否有人在自旋等待。如果有人在自旋等待就设置他的<code>locked</code>为1。</li>
+<li>将自己从自旋等待的链表中移除。</li>
+</ol>
+<h1 id="III-Mutex锁的实现"><a href="#III-Mutex锁的实现" class="headerlink" title="III. Mutex锁的实现"></a>III. <code>Mutex</code>锁的实现</h1><h2 id="一-Mutex锁的数据结构"><a href="#一-Mutex锁的数据结构" class="headerlink" title="一. Mutex锁的数据结构"></a>一. <code>Mutex</code>锁的数据结构</h2><pre><code>struct mutex {
+    atomic_long_t     owner;
+    spinlock_t        wait_lock;
+
+#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+    struct optimistic_spin_queue osq;
+#endif
+
+    struct list_head  wait_list;
+};
+</code></pre><p>其中<code>owner</code>表示<code>mutex</code>的拥有者，记录了拥有的<code>task_struct</code>的地址。<br><code>wait_lock</code>是一个<code>spinlock</code>用来保护<code>wait_list</code>的访问。<br><code>wait_list</code>记录了获取这个<code>mutex</code>失败的睡眠的进程链表。<br><code>osq</code>是<code>MCS</code>锁的具体实现。</p>
+<p>因为<code>task_struct</code>最少是<code>L1_CACHE_BYTES</code>对齐的，所以每一个<code>task_struct</code>的地址的低<code>Bit</code>是可以被利用的：</p>
+<pre><code>#define MUTEX_FLAG_WAITERS 0x01  //BIT0 为 1 时 等待队列非空，unlock操作唤醒一个进程
+#define MUTEX_FLAG_HANDOFF 0x02  //BIT1 为 1 时 说有有自旋操作，unlock需要有一个handoff操作
+#define MUTEX_FLAG_PICKUP  0x04  //BIT2 为 1 时 说明handoff操作已经操作，等待被新的等待者获取锁
+#define MUTEX_FLAGS        0x07
+
+static inline struct task_struct *__owner_task(unsigned long owner)
+{
+    return (struct task_struct *)(owner &amp; ~MUTEX_FLAGS);
+}
+
+static inline unsigned long __owner_flags(unsigned long owner)
+{
+    return owner &amp; MUTEX_FLAGS;
+}
+</code></pre><h2 id="二-初始化互斥锁"><a href="#二-初始化互斥锁" class="headerlink" title="二. 初始化互斥锁"></a>二. 初始化互斥锁</h2><ol>
+<li><p><code>DEFINE_MUTEX</code></p>
+<pre><code>#define __MUTEX_INITIALIZER(lockname) \
+        { .owner = ATOMIC_LONG_INIT(0) \
+        , .wait_lock = __SPIN_LOCK_UNLOCKED(lockname.wait_lock) \
+        , .wait_list = LIST_HEAD_INIT(lockname.wait_list) }
+
+#define DEFINE_MUTEX(mutexname) \
+        struct mutex mutexname = __MUTEX_INITIALIZER(mutexname)
+</code></pre></li>
+<li><p><code>mutex_init</code>:</p>
+<pre><code>#define mutex_init(mutex)                      \
+do {                                           \
+        static struct lock_class_key __key;    \
+                                               \
+        __mutex_init((mutex), #mutex, &amp;__key); \
+} while (0)
+
+__mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
+{
+    atomic_long_set(&amp;lock-&gt;owner, 0);
+    spin_lock_init(&amp;lock-&gt;wait_lock);
+    INIT_LIST_HEAD(&amp;lock-&gt;wait_list);
+#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+    osq_lock_init(&amp;lock-&gt;osq);
+#endif
+
+    debug_mutex_init(lock, name, key);
+}
+</code></pre></li>
+</ol>
+<h2 id="三-获取互斥锁"><a href="#三-获取互斥锁" class="headerlink" title="三. 获取互斥锁"></a>三. 获取互斥锁</h2><p><code>mutex_lock</code>的实现如下：</p>
+<pre><code>void __sched mutex_lock(struct mutex *lock)
+{
+    might_sleep();
+
+    if (!_fast(lock))
+        __mutex_lock_slowpath(lock);
+}
+</code></pre><p>先调用<code>__mutex_trylock_fast</code>尝试获取锁：</p>
+<pre><code>static __always_inline bool __mutex_trylock_fast(struct mutex *lock)
+{
+    unsigned long curr = (unsigned long)current;
+
+    //判断lock-&gt;owner是否为0，如果为0则说明没有人占用锁，
+    //再把当前进程的task_struct地址赋值给owner，表示占有了锁
+    if (!atomic_long_cmpxchg_acquire(&amp;lock-&gt;owner, 0UL, curr))
+        //如果相同返回true
+        return true;
+
+    return false;
+}
+</code></pre><p>如果快速的尝试，发现<code>mutex</code>已经被人占有的话，就再调用<code>__mutex_lock_slowpath</code>：</p>
+<pre><code>static noinline void __sched
+__mutex_lock_slowpath(struct mutex *lock)
+{
+    __mutex_lock(lock, TASK_UNINTERRUPTIBLE, 0, NULL, _RET_IP_);
+}
+
+static int __sched
+__mutex_lock(struct mutex *lock, long state, unsigned int subclass,
+             struct lockdep_map *nest_lock, unsigned long ip)
+{
+    return __mutex_lock_common(lock, state, subclass, nest_lock, ip, NULL, false);
+}
+</code></pre><p>最终调用<code>__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, NULL, _RET_IP_, NULL, false)</code>清除无用的代码后，函数实现如下：</p>
+<pre><code>[kernel/locking/mutex.c __mutex_lock_common 片段1]
+
+static __always_inline int __sched
+__mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+                    struct lockdep_map *nest_lock, unsigned long ip,
+                    struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
+{
+    //每一个Mutex_waiter 表示一个在睡眠等待的等待的等待者
+    struct mutex_waiter waiter;
+    bool first = false;
+    int ret;
+
+    //禁止抢占，意味着本地CPU上的进程只能有一个同时尝试上锁
+    preempt_disable();
+
+    //尝试获取锁
+    if (__mutex_trylock(lock) ||
+        mutex_optimistic_spin(lock, ww_ctx, use_ww_ctx, NULL)) {
+        //获取成功，打开抢占
+        preempt_enable();
+        return 0;
+    }
+</code></pre><p>先调用<code>__mutex_trylock</code>尝试是否能获取<code>muxte</code>：</p>
+<pre><code>[kernel/locking/mutex.c __mutex_trylock 函数]
+
+static inline bool __mutex_trylock(struct mutex *lock)
+{
+    return !__mutex_trylock_or_owner(lock);
+}
+
+[kernel/locking/mutex.c __mutex_trylock_or_owner 函数]
+
+static inline struct task_struct *__mutex_trylock_or_owner(struct mutex *lock)
+{
+    unsigned long owner, curr = (unsigned long)current;
+
+    //获取owner的值
+    owner = atomic_long_read(&amp;lock-&gt;owner);
+    for (;;) {
+        //获取flags和owner的task_struct地址
+        unsigned long old, flags = __owner_flags(owner);
+        unsigned long task = owner &amp; ~MUTEX_FLAGS;
+
+        //如果task不为0，说明有owner
+        if (task) {
+            //如果owner不是自己，break掉
+            if (likely(task != curr))
+                break;
+
+            //下面task已经等于current
+
+            //前面的锁的拥有者还没有完成释放的操作，break掉
+            if (likely(!(flags &amp; MUTEX_FLAG_PICKUP)))
+                break;
+
+            //前面的锁已经完成了handoff操作，但是要等待pickup
+
+            //去掉pickup bit
+            flags &amp;= ~MUTEX_FLAG_PICKUP;
+        }
+
+        //去掉handoff bit
+        flags &amp;= ~MUTEX_FLAG_HANDOFF;
+
+        //不管是task为0，还是前面的锁已经handoff等待自己pickup，都说明自己获取到了锁
+
+        //如果owner不变，把owner设置成自己。
+        old = atomic_long_cmpxchg_acquire(&amp;lock-&gt;owner, owner, curr | flags);
+        if (old == owner) //如果自己设置成功，返回NULL
+            return NULL;
+
+        owner = old;
+    }
+
+    //返回owner的task_struct
+    return __owner_task(owner);
+}
+</code></pre><p>可以看到<code>__mutex_trylock_or_owner</code>是尝试获取锁，如果获取成功，返回<code>Null</code>，反之返回锁的拥有者的<code>task_struct</code>。<br><code>mutex_optimistic_spin</code>的实现如下：</p>
+<pre><code>[kernel/locking/mutex.c mutex_optimistic_spin 函数]
+
+static __always_inline bool
+mutex_optimistic_spin(struct mutex *lock, struct ww_acquire_ctx *ww_ctx,
+                      const bool use_ww_ctx, struct mutex_waiter *waiter)
+{
+    if (!waiter) {
+        //判断是否可以自旋，如果不能自旋，跳到fail
+        if (!mutex_can_spin_on_owner(lock))
+            goto fail;
+
+        //如果可以自旋，就获取osq锁，osq锁可能自旋等待
+        //如果获取失败，跳到fail
+        if (!osq_lock(&amp;lock-&gt;osq))
+            goto fail;
+    }
+
+    //由于上面是获取到的osq锁
+    for (;;) {
+        struct task_struct *owner;
+
+        //再尝试获取mutex锁
+        owner = __mutex_trylock_or_owner(lock);
+        if (!owner)
+            break;
+
+        //自旋等待owner释放锁，如果自旋失败，跳到fail_unlock
+        //自旋失败可能是因为owner-&gt;cpu不为1，owner可以被抢占，需要调度等
+        //自旋等待成功，是owner释放了锁
+        if (!mutex_spin_on_owner(lock, owner, ww_ctx, waiter))
+            goto fail_unlock;
+        cpu_relax();
+    }
+
+    //如果等待到了owner释放锁
+    //释放osq锁
+    if (!waiter)
+        osq_unlock(&amp;lock-&gt;osq);
+
+    return true;
+
+fail_unlock:
+    if (!waiter)
+        osq_unlock(&amp;lock-&gt;osq);
+
+fail:
+    if (need_resched()) {
+        __set_current_state(TASK_RUNNING);
+        schedule_preempt_disabled();
+    }
+
+    return false;
+}
+</code></pre><p>其中<code>mutex_can_spin_on_owner</code>的实现如下：</p>
+<pre><code>static inline int mutex_can_spin_on_owner(struct mutex *lock)
+{
+    struct task_struct *owner;
+    int retval = 1;
+
+    //如果需要被调度，不能自旋
+    if (need_resched())
+        return 0;
+
+    rcu_read_lock();
+    owner = __mutex_owner(lock);
+
+    //如果owner-&gt;on_cpu为1，说明这个进程正在cpu上执行
+    //且不会被抢占
+    if (owner)
+        retval = owner-&gt;on_cpu &amp;&amp; !vcpu_is_preempted(task_cpu(owner));
+    rcu_read_unlock();
+
+    //通过owner的进程运行状态来判断是否可以自旋
+    return retval;
+}
+</code></pre><p>继续看<code>__mutex_lock_common</code>函数：</p>
+<pre><code>[kernel/locking/mutex.c __mutex_lock_common 片段2]
+
+//尝试获取锁失败，尝试自旋等待失败之后
+
+    spin_lock(&amp;lock-&gt;wait_lock);
+
+    //再尝试获取
+    if (__mutex_trylock(lock)) {
+        goto skip_wait;
+    }
+
+    //把waiter加入到wait_list到尾部
+    list_add_tail(&amp;waiter.list, &amp;lock-&gt;wait_list);
+
+    waiter.task = current;
+
+    //如果waiter是第一个等待的，意味着前面没有等待的人
+    if (__mutex_waiter_is_first(lock, &amp;waiter))
+            __mutex_set_flag(lock, MUTEX_FLAG_WAITERS);
+
+    //设置当前进程状态
+    set_current_state(state);
+
+    for (;;) {
+        if (__mutex_trylock(lock))
+            goto acquired;
+
+        if (unlikely(signal_pending_state(state, current))) {
+            ret = -EINTR;
+            goto err;
+        }
+
+        //调度前睡眠
+        spin_unlock(&amp;lock-&gt;wait_lock);
+        //让出cpu，调度出去
+        schedule_preempt_disabled();
+
+        //之后被唤醒，重新运行
+        if (!first) {
+            //再判断是否不是first
+            first = __mutex_waiter_is_first(lock, &amp;waiter);
+            if (first)
+                //如果是第一个，设置为HANDOFF
+                __mutex_set_flag(lock, MUTEX_FLAG_HANDOFF);
+        }
+
+        set_current_state(state);
+
+        //再尝试是否可以获取锁，是否可以自旋
+        if (__mutex_trylock(lock) ||
+            (first &amp;&amp; mutex_optimistic_spin(lock, ww_ctx, use_ww_ctx, &amp;waiter)))
+            break;
+
+        //醒了之后再加锁
+        spin_lock(&amp;lock-&gt;wait_lock);
+    }
+    spin_lock(&amp;lock-&gt;wait_lock);
+
+//获取锁成功
+acquired:
+    //设置当前进程状态为运行态
+    __set_current_state(TASK_RUNNING);
+
+    //移除waiter
+    mutex_remove_waiter(lock, &amp;waiter, current);
+
+    //如果列表为空，清除flag
+    if (likely(list_empty(&amp;lock-&gt;wait_list)))
+        __mutex_clear_flag(lock, MUTEX_FLAGS);
+
+skip_wait:
+    spin_unlock(&amp;lock-&gt;wait_lock);
+    //使能抢占
+    preempt_enable();
+    return 0;
+
+err:
+    __set_current_state(TASK_RUNNING);
+    mutex_remove_waiter(lock, &amp;waiter, current);
+
+err_early_backoff:
+    spin_unlock(&amp;lock-&gt;wait_lock);
+    preempt_enable();
+    return ret;
+}
+</code></pre><p>获取<code>mutex</code>还有一些其他的函数：</p>
+<pre><code>#define mutex_lock_interruptible(lock) mutex_lock_interruptible_nested(lock, 0)
+#define mutex_lock_killable(lock) mutex_lock_killable_nested(lock, 0)
+</code></pre><p>跟<code>semphore</code>这些函数只是进程的状态不一样，<code>interruptible</code>表示可以被信号打断。<code>Killable</code>表示可以被致命信号杀死。</p>
+<h2 id="四-释放互斥锁"><a href="#四-释放互斥锁" class="headerlink" title="四. 释放互斥锁"></a>四. 释放互斥锁</h2><pre><code>void __sched mutex_unlock(struct mutex *lock)
+{       
+    if (__mutex_unlock_fast(lock))
+        return;
+
+    __mutex_unlock_slowpath(lock, _RET_IP_);
+}
+
+static __always_inline bool __mutex_unlock_fast(struct mutex *lock)
+{       
+    unsigned long curr = (unsigned long)current;
+
+    //如果owner是自己，直接把owner设置为0
+    if (atomic_long_cmpxchg_release(&amp;lock-&gt;owner, curr, 0UL) == curr)
+        return true;
+
+    return false;
+}
+
+static noinline void __sched __mutex_unlock_slowpath(struct mutex *lock, unsigned long ip)
+{
+    struct task_struct *next = NULL;
+    DEFINE_WAKE_Q(wake_q);
+    unsigned long owner;
+
+    owner = atomic_long_read(&amp;lock-&gt;owner);
+    for (;;) {
+        unsigned long old;
+
+        //如果正在handoff
+        if (owner &amp; MUTEX_FLAG_HANDOFF)
+            break;
+
+        old = atomic_long_cmpxchg_release(&amp;lock-&gt;owner, owner,
+                                          __owner_flags(owner));
+        if (old == owner) {
+            if (owner &amp; MUTEX_FLAG_WAITERS)
+                break;
+
+            return;
+        }
+
+        owner = old;
+    }
+
+    spin_lock(&amp;lock-&gt;wait_lock);
+    if (!list_empty(&amp;lock-&gt;wait_list)) {
+        //找到第一个waiter
+        struct mutex_waiter *waiter =
+            list_first_entry(&amp;lock-&gt;wait_list,
+                     struct mutex_waiter, list);
+
+        next = waiter-&gt;task;
+
+        wake_q_add(&amp;wake_q, next);
+    }
+
+    if (owner &amp; MUTEX_FLAG_HANDOFF)
+            __mutex_handoff(lock, next);
+
+    spin_unlock(&amp;lock-&gt;wait_lock);
+    //唤醒
+    wake_up_q(&amp;wake_q);
+}
+</code></pre><p>#. <strong>未完待续</strong></p>
+
+      
+
+      
+        <div class="page-reward">
+          <a href="javascript:;" class="page-reward-btn tooltip-top">
+            <div class="tooltip tooltip-east">
+            <span class="tooltip-item">
+              赏
+            </span>
+            <span class="tooltip-content">
+              <span class="tooltip-text">
+                <span class="tooltip-inner">
+                  <p class="reward-p"><i class="icon icon-quo-left"></i>谢谢你请我吃糖果<i class="icon icon-quo-right"></i></p>
+                  <div class="reward-box">
+                    
+                    <div class="reward-box-item">
+                      <img class="reward-img" src="/assets/img/alipay.jpg">
+                      <span class="reward-type">支付宝</span>
+                    </div>
+                    
+                    
+                    <div class="reward-box-item">
+                      <img class="reward-img" src="/assets/img/weixinpay.jpg">
+                      <span class="reward-type">微信</span>
+                    </div>
+                    
+                  </div>
+                </span>
+              </span>
+            </span>
+          </div>
+          </a>
+        </div>
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+      
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">memery</a>
+        			<a href="/categories/linux同步和互斥//" class="article-tag-list-link color1">linux同步和互斥</a>
         		</li>
       		
 		</ul>
 	</div>
 
-          
 
+      
+
+      
+        
+<div class="share-btn share-icons tooltip-left">
+  <div class="tooltip tooltip-east">
+    <span class="tooltip-item">
+      <a href="javascript:;" class="share-sns share-outer">
+        <i class="icon icon-share"></i>
+      </a>
+    </span>
+    <span class="tooltip-content">
+      <div class="share-wrap">
+        <div class="share-icons">
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="icon icon-weibo"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="icon icon-weixin"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="icon icon-qq"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="icon icon-douban"></i>
+          </a>
+          <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a>
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="icon icon-facebook"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="icon icon-twitter"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="icon icon-google"></i>
+          </a>
         </div>
-        <div class="clearfix"></div>
-    </header>
+      </div>
+    </span>
+  </div>
+</div>
+
+<div class="page-modal wx-share js-wx-box">
+    <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//pan.baidu.com/share/qrcode?url=https://songyoulin.github.io/2018/05/02/2018-03-24-互斥锁mutex/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div class="mask js-mask"></div>
+      
+      <div class="clearfix"></div>
+    </div>
   </div>
 </article>
+
   
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2017/06/12/物理内存相关的三个数据结构pglist_data、zone、page/" class="archive-article-date">
-  	<time datetime="2017-06-12T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-06-12</time>
-</a>
+<nav id="article-nav">
+  
+    <a href="/2018/05/02/2018-03-22-原子操作/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          (no title)
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2017/06/13/伙伴系统buddy/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">基于`linux-4.15`介绍`buddy`原理，以及`buddy`主要的`api`的实现过程和原理</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
         </div>
-    	 
+        
+        
+    </div>
+</aside>
+
+
+
+	
+	<!-- ������City�氲װ���� -->
+<div id="lv-container" data-id="city" data-uid="MTAyMC8zNjE0NC8xMjY3OQ==">
+	<script type="text/javascript">
+   (function(d, s) {
+       var j, e = d.getElementsByTagName(s)[0];
+
+       if (typeof LivereTower === 'function') { return; }
+
+       j = d.createElement(s);
+       j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+       j.async = true;
+
+       e.parentNode.insertBefore(j, e);
+   })(document, 'script');
+	</script>
+<noscript> Ϊ����ʹ�����������۹����뼤��JavaScript</noscript>
+</div>
+<!-- City�氲װ��������� -->
+	
+
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2017/06/12/物理内存相关的三个数据结构pglist_data、zone、page/">物理内存相关的三个数据结构</a>
-    </h1>
+  
   
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">memery</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-      
-        </div></section>
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2015" class="archive-year">2015</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2015/06/12/linux学习线路/" class="archive-article-date">
-  	<time datetime="2015-06-12T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2015-06-12</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2015/06/12/linux学习线路/">linux 学习方法</a>
-    </h1>
   
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">学习教程</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
   
 
-    
+  
 
 
           </div>
@@ -324,9 +903,9 @@
 	var yiliaConfig = {
 		mathjax: false,
 		isHome: false,
-		isPost: false,
+		isPost: true,
 		isArchive: false,
-		isTag: true,
+		isTag: false,
 		isCategory: false,
 		open_in_new: false,
 		toc_hide_index: true,

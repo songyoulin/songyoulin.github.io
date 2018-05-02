@@ -6,15 +6,19 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://songyoulin.github.io">
-  <title>Tag: linux | SuperSong的博客</title>
+  <title>SuperSong的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
+  <meta name="description" content="content{:toc}  本文介绍linux中自旋锁spinlock的实现。 I. spinlock简介spinlock适用于那些临界代码不是一个变量（临界区是一个变量的话就是原子操作即可），且临界区处理非常快的场景。比如一段临界代码，比如要操作一个链表、二叉树等数据时需要满足原子性。同一时刻只有一个代码路径可以拥有spinlock，其他的代码路径在未获取到锁的拥有权时，会不停的尝试，直到成">
+<meta property="og:type" content="article">
 <meta property="og:title" content="SuperSong的博客">
-<meta property="og:url" content="https://songyoulin.github.io/tags/linux/index.html">
+<meta property="og:url" content="https://songyoulin.github.io/2018/05/02/2018-03-23-自旋锁spinlock/index.html">
 <meta property="og:site_name" content="SuperSong的博客">
+<meta property="og:description" content="content{:toc}  本文介绍linux中自旋锁spinlock的实现。 I. spinlock简介spinlock适用于那些临界代码不是一个变量（临界区是一个变量的话就是原子操作即可），且临界区处理非常快的场景。比如一段临界代码，比如要操作一个链表、二叉树等数据时需要满足原子性。同一时刻只有一个代码路径可以拥有spinlock，其他的代码路径在未获取到锁的拥有权时，会不停的尝试，直到成">
 <meta property="og:locale" content="default">
+<meta property="og:updated_time" content="2018-04-01T15:12:16.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="SuperSong的博客">
+<meta name="twitter:description" content="content{:toc}  本文介绍linux中自旋锁spinlock的实现。 I. spinlock简介spinlock适用于那些临界代码不是一个变量（临界区是一个变量的话就是原子操作即可），且临界区处理非常快的场景。比如一段临界代码，比如要操作一个链表、二叉树等数据时需要满足原子性。同一时刻只有一个代码路径可以拥有spinlock，其他的代码路径在未获取到锁的拥有权时，会不停的尝试，直到成">
   
     <link rel="alternative" href="/atom.xml" title="SuperSong的博客" type="application/atom+xml">
   
@@ -150,158 +154,517 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
-  
-  
+            <article id="post-2018-03-23-自旋锁spinlock" class="article article-type-post " itemscope itemprop="blogPost">
+  <div class="article-inner">
     
-    
+    <div class="article-entry" itemprop="articleBody">
       
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2017" class="archive-year">2017</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2017/06/13/伙伴系统buddy/" class="archive-article-date">
-  	<time datetime="2017-06-13T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-06-13</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2017/06/13/伙伴系统buddy/">基于`linux-4.15`介绍`buddy`原理，以及`buddy`主要的`api`的实现过程和原理</a>
-    </h1>
-  
+        <ul>
+<li>content<br>{:toc}</li>
+</ul>
+<p>本文介绍<code>linux</code>中自旋锁<code>spinlock</code>的实现。</p>
+<h1 id="I-spinlock简介"><a href="#I-spinlock简介" class="headerlink" title="I. spinlock简介"></a>I. <code>spinlock</code>简介</h1><p><code>spinlock</code>适用于那些临界代码不是一个变量（临界区是一个变量的话就是原子操作即可），且临界区处理非常快的场景。比如一段临界代码，比如要操作一个链表、二叉树等数据时需要满足原子性。同一时刻只有一个代码路径可以拥有<code>spinlock</code>，其他的代码路径在未获取到锁的拥有权时，会不停的尝试，直到成功为止。所以<code>spinlock</code>获取到锁之后，最好不要有耗时的操作，更不能有睡眠。</p>
+<h1 id="II-spinlock各api及其实现"><a href="#II-spinlock各api及其实现" class="headerlink" title="II. spinlock各api及其实现"></a>II. <code>spinlock</code>各<code>api</code>及其实现</h1><h2 id="一-spinlock数据结构"><a href="#一-spinlock数据结构" class="headerlink" title="一. spinlock数据结构"></a>一. <code>spinlock</code>数据结构</h2><p><code>spinlock</code>的数据结构在<code>ARM32</code>定义如下：</p>
+<pre><code>typedef struct {
+    union {
+        u32 slock;
+        struct __raw_tickets {
+            u16 owner;
+            u16 next;
+        } tickets;
+    };
+} arch_spinlock_t;
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
+typedef struct raw_spinlock {
+    arch_spinlock_t raw_lock;
+} raw_spinlock_t;
+
+typedef struct spinlock {
+    union {
+        struct raw_spinlock rlock;
+    };
+} spinlock_t;
+</code></pre><p>在之前的<code>linux</code>中,<code>arch_spinlock_t.slock</code>变量为0的话，表示锁已经被占有，如果<code>slock</code>为1  的话，表示锁是空闲。但是在后面的测试中发现，很有可能出现锁的分配不公平的情况，尤其在多核上。比如，<code>CPU1</code>先申请到了锁，随后<code>CPU2</code>又申请锁，发现锁被占用，<code>CPU1</code>释放了锁，但是马上<code>CPU1</code>又申请锁，因为这时候，<code>CPU1</code>的<code>L1 cache</code>中已经存在了这个锁的内容，所以<code>CPU1</code>可能会很快的获取到锁，这样对<code>CPU2</code>来说是一件非常不公平的事情。<br>为了解决这个问题，又把<code>slock</code>分成了两个部分，一部分是<code>owner</code>，一部分是<code>next</code>，如<code>arch_spinlock_t</code>定义中所示的那样。下面的例子可以简单的说明一下其工作过程：</p>
+<ol>
+<li>初始化时<code>owner</code>和<code>next</code>都为0，</li>
+<li>当第一个人申请到锁之后，把<code>next++</code>，这个时候<code>next</code>为1，<code>owner</code>为0；</li>
+<li>这时第二个人申请锁，发现<code>next</code>和<code>owner</code>不相等，说明有人持有锁，他把<code>next</code>的值记录下来：<code>next == 1</code>，并把<code>next++</code>。</li>
+<li>这时第三个人申请锁，发现<code>next</code>和<code>owner</code>不相等，说明有人持有锁，他把<code>next</code>的值记录下来：<code>next == 2</code>，并把<code>next++</code>。</li>
+<li>第一个人释放了锁，把<code>owner++</code>，这时<code>owner</code>变为1，只有第二个人记录的<code>next</code>的值和现在的<code>owner</code>相等，那第二个人申请到了锁。</li>
+<li>第二个人释放了锁，把<code>owner++</code>，这时<code>owner</code>变为3，第三个人发现<code>next</code>的值和<code>owner</code>的值相同，第三个人获取锁。</li>
+</ol>
+<h2 id="二-spinlock的定义和初始化"><a href="#二-spinlock的定义和初始化" class="headerlink" title="二. spinlock的定义和初始化"></a>二. <code>spinlock</code>的定义和初始化</h2><pre><code>[arch/arm/include/asm/spinlock_types.h]
+
+#define __ARCH_SPIN_LOCK_UNLOCKED       { { 0 } }
+
+[include/linux/spinlock_types.h]
+
+#define __RAW_SPIN_LOCK_INITIALIZER(lockname)   \
+        {                                       \
+        .raw_lock = __ARCH_SPIN_LOCK_UNLOCKED,  \
+        SPIN_DEBUG_INIT(lockname)               \
+        SPIN_DEP_MAP_INIT(lockname) }
+
+#define __RAW_SPIN_LOCK_UNLOCKED(lockname)      \
+        (raw_spinlock_t) __RAW_SPIN_LOCK_INITIALIZER(lockname)
+
+#define DEFINE_RAW_SPINLOCK(x)  raw_spinlock_t x = __RAW_SPIN_LOCK_UNLOCKED(x)
+
+#define __SPIN_LOCK_INITIALIZER(lockname) \
+        { { .rlock = __RAW_SPIN_LOCK_INITIALIZER(lockname) } }
+
+#define __SPIN_LOCK_UNLOCKED(lockname) \
+        (spinlock_t ) __SPIN_LOCK_INITIALIZER(lockname)
+
+#define DEFINE_SPINLOCK(x)      spinlock_t x = __SPIN_LOCK_UNLOCKED(x)
+</code></pre><p><code>spinlock</code>的定义和初始化可以用<code>DEFINE_SPINLOCK(x)</code>来实现，如上面的代码。会有<code>raw_spinlock_t</code>以及这么多层的封装，是为了<code>linux RT-patch</code>。<br>也可以自己定义<code>spinlock_t</code>变量，再调用<code>spin_lock_init</code>。</p>
+<h2 id="三-spin-lock和spin-unlock"><a href="#三-spin-lock和spin-unlock" class="headerlink" title="三. spin_lock和spin_unlock"></a>三. <code>spin_lock</code>和<code>spin_unlock</code></h2><p><code>spin_lock</code>获取锁，<code>spin_unlock</code>释放锁。</p>
+<p>其中<code>spin_lock</code>的实现如下：</p>
+<pre><code>static __always_inline void spin_lock(spinlock_t *lock)
+{       
+    raw_spin_lock(&amp;lock-&gt;rlock);
+}
+
+#define raw_spin_lock(lock)   _raw_spin_lock(lock)
+#define _raw_spin_lock(lock) __raw_spin_lock(lock)
+
+static inline void __raw_spin_lock(raw_spinlock_t *lock)
+{
+    preempt_disable();
+    spin_acquire(&amp;lock-&gt;dep_map, 0, 0, _RET_IP_);
+    LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
+}
+
+#define LOCK_CONTENDED(_lock, try, lock)             \
+do {                                                 \
+    if (!try(_lock)) {                               \
+        lock_contended(&amp;(_lock)-&gt;dep_map, _RET_IP_); \
+        lock(_lock);                                 \
+    }                                                \
+    lock_acquired(&amp;(_lock)-&gt;dep_map, _RET_IP_);      \
+} while (0)
+</code></pre><p><code>spin_acquire</code>在没有开启<code>CONFIG_LOCKDEP</code>和<code>CONFIG_LOCK_STAT</code>的话，是一个空函数，这个函数用来死锁监测时使用。</p>
+<p><code>spin_lock</code>最终形式为：</p>
+<pre><code>static __always_inline void spin_lock(spinlock_t *lock)
+{
+    preempt_disable();
+    if(do_raw_spin_trylock(lock))
+    {
+        do_raw_spin_lock(lock)
+    }
+}
+</code></pre><p>其中<code>preempt_disable</code>为关抢占。<br><code>do_raw_spin_trylock</code>的试下如下：</p>
+<pre><code>static inline int do_raw_spin_trylock(raw_spinlock_t *lock)
+{
+    return arch_spin_trylock(&amp;(lock)-&gt;raw_lock); 
+}
+
+static inline int arch_spin_trylock(arch_spinlock_t *lock)
+{
+    unsigned long contended, res;
+    u32 slock;
+
+    prefetchw(&amp;lock-&gt;slock);
+    do {
+        __asm__ __volatile__(
+        &quot;       ldrex   %0, [%3]\n&quot;
+        &quot;       mov     %2, #0\n&quot;
+        &quot;       subs    %1, %0, %0, ror #16\n&quot;
+        &quot;       addeq   %0, %0, %4\n&quot;
+        &quot;       strexeq %2, %0, [%3]&quot;
+        : &quot;=&amp;r&quot; (slock), &quot;=&amp;r&quot; (contended), &quot;=&amp;r&quot; (res)
+        : &quot;r&quot; (&amp;lock-&gt;slock), &quot;I&quot; (1 &lt;&lt; TICKET_SHIFT)
+        : &quot;cc&quot;);
+    } while (res);
+
+    if (!contended) {
+            smp_mb();
+            return 1;
+    } else {
+            return 0;
+    }
+}
+</code></pre><p>上面的代码先对<code>lock-&gt;slock</code>进行一次原子读，放入到<code>contended</code>里，如果<code>contended</code>为0，则返回1，反之返回0。<code>arch_spin_trylock</code>是先对<code>spinlock</code>进行一次尝试操作。成功获取锁返回1，没有获取到锁则返回0。</p>
+<p>如果尝试失败，<code>spin_lock</code>再调用<code>do_raw_spin_lock</code>：</p>
+<pre><code>void do_raw_spin_lock(raw_spinlock_t *lock)
+{               
+    debug_spin_lock_before(lock);
+    arch_spin_lock(&amp;lock-&gt;raw_lock);
+    debug_spin_lock_after(lock);
+}
+
+static inline void arch_spin_lock(arch_spinlock_t *lock)
+{
+    unsigned long tmp;
+    u32 newval;
+    arch_spinlock_t lockval;
+
+    prefetchw(&amp;lock-&gt;slock);
+    __asm__ __volatile__(
+&quot;1: ldrex   %0, [%3]\n&quot;
+&quot;   add     %1, %0, %4\n&quot;
+&quot;   strex   %2, %1, [%3]\n&quot;
+&quot;   teq     %2, #0\n&quot;
+&quot;   bne     1b&quot;
+    : &quot;=&amp;r&quot; (lockval), &quot;=&amp;r&quot; (newval), &quot;=&amp;r&quot; (tmp)
+    : &quot;r&quot; (&amp;lock-&gt;slock), &quot;I&quot; (1 &lt;&lt; TICKET_SHIFT)
+    : &quot;cc&quot;);
+
+    while (lockval.tickets.next != lockval.tickets.owner) {
+            wfe();
+            lockval.tickets.owner = ACCESS_ONCE(lock-&gt;tickets.owner);
+    }
+
+    smp_mb();
+}
+</code></pre><p>上面的代码是先用原子操作获取<code>lock.tickets.next</code>的值到<code>lockval.tickets.next</code>中，获取<code>lock.tickets.owner</code>到<code>lockval.tickets.owner</code>中。判断<code>lockval.tickets.next</code>的值是否和<code>lock.tickets.owner</code>相等，如果不相等，则调用<code>wfe（wait for event）</code>进入到一种<code>standby</code>的低功耗睡眠模式（单核中<code>wfe()</code>函数是一个空语句，因为单核不能睡眠，睡眠之后没有其他人会将这个<code>cpu</code>唤醒）。这个模式会在<code>spinlock</code>的<code>unlock</code>中用<code>SEV</code>指令唤醒。唤醒之后，再去读取一次<code>lock-&gt;tickets.owner</code>的值到<code>lockval.tickets.owner</code>继续判断循环。</p>
+<p><code>spin_unlock</code>的实现如下：</p>
+<pre><code>static __always_inline void spin_unlock(spinlock_t *lock)
+{
+    raw_spin_unlock(&amp;lock-&gt;rlock);
+}
+
+#define raw_spin_unlock(lock)   _raw_spin_unlock(lock)
+#define _raw_spin_unlock(lock)  __raw_spin_unlock(lock)
+
+static inline void __raw_spin_unlock(raw_spinlock_t *lock)
+{
+    spin_release(&amp;lock-&gt;dep_map, 1, _RET_IP_);
+    do_raw_spin_unlock(lock);
+    preempt_enable();
+}
+
+static inline void do_raw_spin_unlock(raw_spinlock_t *lock) __releases(lock)
+{
+    arch_spin_unlock(&amp;lock-&gt;raw_lock);
+    __release(lock);
+}
+
+static inline void arch_spin_unlock(arch_spinlock_t *lock)
+{
+    smp_mb();
+    lock-&gt;tickets.owner++;
+    dsb_sev();
+}
+</code></pre><p>可以看到是把<code>lock-&gt;tickets.owner++</code>，因为同一时间只可能有一个人拥有锁，所以不需要用原子操作来操作<code>owner</code>。最后用<code>SEV</code>指令去唤醒那些正在睡眠的<code>CPU core</code>。需要注意的是，如果在单核内，<code>wfe()</code>和<code>dsb_sev()</code>为<code>nop</code>指令，因为单核<code>cpu</code>进入睡眠之后，是没有人来触发<code>SEV</code>指令的，上述<code>WFE</code>和<code>SEV</code>只适用于多核的情况。</p>
+<h2 id="四-spin-lock-irq和spin-unlock-irq"><a href="#四-spin-lock-irq和spin-unlock-irq" class="headerlink" title="四. spin_lock_irq和spin_unlock_irq"></a>四. <code>spin_lock_irq</code>和<code>spin_unlock_irq</code></h2><p><code>spin_lock_irq</code>的实现如下：</p>
+<pre><code>static __always_inline void spin_lock_irq(spinlock_t *lock)
+{
+    raw_spin_lock_irq(&amp;lock-&gt;rlock);
+}
+#define raw_spin_lock_irq(lock)         _raw_spin_lock_irq(lock)
+#define _raw_spin_lock_irq(lock) __raw_spin_lock_irq(lock)
+
+static inline void __raw_spin_lock_irq(raw_spinlock_t *lock)
+{
+    local_irq_disable();
+    preempt_disable();
+    spin_acquire(&amp;lock-&gt;dep_map, 0, 0, _RET_IP_);
+    LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
+}
+</code></pre><p>可以看到<code>spin_lock_irq</code>比<code>spin_lock</code>多了一个<code>local_irq_disable</code>，这个是屏蔽本地<code>cpu</code>的中断，为什么要这么做呢，因为如果要在中断里和进程中都有获取某个<code>spinlock</code>的操作，那么如果在这个进程获取到<code>spinlock</code>之后，发生了一次中断，那么在中断中再去获取这个<code>spinlock</code>会一直获取不到，一直卡在中断<code>ISR</code>中，并且会触发<code>wfe</code>的低功耗睡眠模式，这显然是不允许的，所以，当这个进程获取到<code>spinlock</code>之后，一定要关闭中断。<code>spin_lock_irq</code>就是出于这样的目的。</p>
+<p><code>spin_unlock_irq</code>的实现如下：</p>
+<pre><code>static __always_inline void spin_unlock_irq(spinlock_t *lock) 
+{
+    raw_spin_unlock_irq(&amp;lock-&gt;rlock);
+}       
+
+#define raw_spin_unlock_irq(lock)   _raw_spin_unlock_irq(lock)
+#define _raw_spin_unlock_irq(lock) __raw_spin_unlock_irq(lock)
+
+static inline void __raw_spin_unlock_irq(raw_spinlock_t *lock)
+{
+    spin_release(&amp;lock-&gt;dep_map, 1, _RET_IP_);
+    do_raw_spin_unlock(lock);
+    local_irq_enable();
+    preempt_enable();
+}
+</code></pre><p>同样的<code>spin_unlock_irq</code>比<code>spin_unlock</code>多了一个<code>local_irq_enable</code>。</p>
+<h2 id="五-spin-lock-irqsave和spin-unlock-irqrestore"><a href="#五-spin-lock-irqsave和spin-unlock-irqrestore" class="headerlink" title="五. spin_lock_irqsave和spin_unlock_irqrestore"></a>五. <code>spin_lock_irqsave</code>和<code>spin_unlock_irqrestore</code></h2><p>试想一下这种情况：</p>
+<pre><code>...
+local_irq_disable();//因为某种原因关闭了中断
+...
+spin_lock_irq();    //获取某个spinlock，关闭了中断
+...
+spin_unlock_irq();  //释放spinlock，打开中断
+...
+</code></pre><p>当前一个程序因为某种原因关闭了中断，但是后面通过<code>spin_lock_irq</code>获取了某个<code>spinlock</code>并且关闭了中断，等到临界区结束之后，又调用<code>spin_unlock_irq</code>释放了<code>spinlock</code>并打开了中断。但是之前中断时关闭的，这个时候中断由于<code>spinlock</code>的原因被开启。为了解决这个问题，就有了<code>spin_lock_irqsave</code>和<code>spin_unlock_irqrestore</code>。保存当前的<code>irq</code>状态，后面临界区结束释放<code>spinlock</code>之后，在恢复之前的中断状态。</p>
+<p><code>spin_lock_irqsave</code>的实现如下：</p>
+<pre><code>#define spin_lock_irqsave(lock, flags)                          \
+do {                                                            \
+        raw_spin_lock_irqsave(spinlock_check(lock), flags);     \
+} while (0)
+
+#define raw_spin_lock_irqsave(lock, flags)      \
+    do {                                        \
+        typecheck(unsigned long, flags);        \
+        flags = _raw_spin_lock_irqsave(lock);   \
+    } while (0)
+
+#define _raw_spin_lock_irqsave(lock) __raw_spin_lock_irqsave(lock)
+
+static inline unsigned long __raw_spin_lock_irqsave(raw_spinlock_t *lock)
+{
+    unsigned long flags;
+
+    local_irq_save(flags);  //保存中断状态
+    preempt_disable();      //关闭抢占
+    spin_acquire(&amp;lock-&gt;dep_map, 0, 0, _RET_IP_);
+
+#ifdef CONFIG_LOCKDEP
+    LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
+#else
+    do_raw_spin_lock_flags(lock, &amp;flags);
+#endif
+    return flags;
+}
+
+#define local_irq_save(flags)         \
+    do {                              \
+        raw_local_irq_save(flags);    \
+    } while (0)
+
+#define raw_local_irq_save(flags)         \
+    do {                                  \
+        typecheck(unsigned long, flags);  \
+        flags = arch_local_irq_save();    \
+    } while (0)
+
+#define arch_local_irq_save arch_local_irq_save
+static inline unsigned long arch_local_irq_save(void)
+{
+    unsigned long flags;
+
+    asm volatile(
+            &quot; mrs   %0, &quot; IRQMASK_REG_NAME_R &quot;  @ arch_local_irq_save\n&quot;
+            &quot; cpsid i&quot;
+            : &quot;=r&quot; (flags) : : &quot;memory&quot;, &quot;cc&quot;);
+    return flags;
+}
+
+#ifdef CONFIG_CPU_V7M
+#define IRQMASK_REG_NAME_R &quot;primask&quot;
+#define IRQMASK_REG_NAME_W &quot;primask&quot;
+#define IRQMASK_I_BIT   1
+#else
+#define IRQMASK_REG_NAME_R &quot;cpsr&quot;
+#define IRQMASK_REG_NAME_W &quot;cpsr_c&quot;
+#define IRQMASK_I_BIT   PSR_I_BIT
+#endif
+</code></pre><p>上面的宏定义和函数调用很深，可以看到是通过<code>mrs</code>指令把<code>IRQMASK_REG_NAME_R</code>寄存器的值保存到<code>flags</code>变量中。<code>IRQMASK_REG_NAME_R</code>在不通的<code>arm</code>架构中代表不通的寄存器。</p>
+<p><code>spin_unlock_irqrestore</code>的实现如下：</p>
+<pre><code>static __always_inline void spin_unlock_irqrestore(spinlock_t *lock, unsigned long flags)
+{
+    raw_spin_unlock_irqrestore(&amp;lock-&gt;rlock, flags);
+}
+
+#define raw_spin_unlock_irqrestore(lock, flags)         \
+    do {                                                \
+        typecheck(unsigned long, flags);                \
+        _raw_spin_unlock_irqrestore(lock, flags);       \
+    } while (0)
+
+#define _raw_spin_unlock_irqrestore(lock, flags) __raw_spin_unlock_irqrestore(lock, flags)
+
+static inline void __raw_spin_unlock_irqrestore(raw_spinlock_t *lock,
+                                            unsigned long flags)
+{
+    spin_release(&amp;lock-&gt;dep_map, 1, _RET_IP_);
+    do_raw_spin_unlock(lock); //释放spinlock
+    local_irq_restore(flags); //恢复中断状态
+    preempt_enable();         //使能调度
+}
+
+#define local_irq_restore(flags) do { raw_local_irq_restore(flags); } while (0)
+
+#define raw_local_irq_restore(flags)      \
+    do {                                  \
+        typecheck(unsigned long, flags);  \
+        arch_local_irq_restore(flags);    \
+    } while (0)
+
+#define arch_local_irq_restore arch_local_irq_restore
+static inline void arch_local_irq_restore(unsigned long flags)
+{
+    asm volatile(
+        &quot; msr &quot; IRQMASK_REG_NAME_W &quot;, %0  @ local_irq_restore&quot;
+        :
+        : &quot;r&quot; (flags)
+        : &quot;memory&quot;, &quot;cc&quot;);
+}
+</code></pre><p>通过<code>msr</code>指令把<code>flags</code>的值放入到<code>IRQMASK_REG_NAME_W</code>寄存器中。恢复当前的中断状态。</p>
+<h2 id="六-spin-lock-bh和spin-unlock-bh"><a href="#六-spin-lock-bh和spin-unlock-bh" class="headerlink" title="六. spin_lock_bh和spin_unlock_bh"></a>六. <code>spin_lock_bh</code>和<code>spin_unlock_bh</code></h2><p><code>spin_lock_bh</code>是禁止<code>CPU</code>软中断，禁止中断下半部的运行。</p>
+
+      
+
+      
+        <div class="page-reward">
+          <a href="javascript:;" class="page-reward-btn tooltip-top">
+            <div class="tooltip tooltip-east">
+            <span class="tooltip-item">
+              赏
+            </span>
+            <span class="tooltip-content">
+              <span class="tooltip-text">
+                <span class="tooltip-inner">
+                  <p class="reward-p"><i class="icon icon-quo-left"></i>谢谢你请我吃糖果<i class="icon icon-quo-right"></i></p>
+                  <div class="reward-box">
+                    
+                    <div class="reward-box-item">
+                      <img class="reward-img" src="/assets/img/alipay.jpg">
+                      <span class="reward-type">支付宝</span>
+                    </div>
+                    
+                    
+                    <div class="reward-box-item">
+                      <img class="reward-img" src="/assets/img/weixinpay.jpg">
+                      <span class="reward-type">微信</span>
+                    </div>
+                    
+                  </div>
+                </span>
+              </span>
+            </span>
+          </div>
+          </a>
+        </div>
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+      
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">memery</a>
+        			<a href="/categories/linux同步和互斥//" class="article-tag-list-link color1">linux同步和互斥</a>
         		</li>
       		
 		</ul>
 	</div>
 
-          
 
+      
+
+      
+        
+<div class="share-btn share-icons tooltip-left">
+  <div class="tooltip tooltip-east">
+    <span class="tooltip-item">
+      <a href="javascript:;" class="share-sns share-outer">
+        <i class="icon icon-share"></i>
+      </a>
+    </span>
+    <span class="tooltip-content">
+      <div class="share-wrap">
+        <div class="share-icons">
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="icon icon-weibo"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="icon icon-weixin"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="icon icon-qq"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="icon icon-douban"></i>
+          </a>
+          <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a>
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="icon icon-facebook"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="icon icon-twitter"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="icon icon-google"></i>
+          </a>
         </div>
-        <div class="clearfix"></div>
-    </header>
+      </div>
+    </span>
+  </div>
+</div>
+
+<div class="page-modal wx-share js-wx-box">
+    <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//pan.baidu.com/share/qrcode?url=https://songyoulin.github.io/2018/05/02/2018-03-23-自旋锁spinlock/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div class="mask js-mask"></div>
+      
+      <div class="clearfix"></div>
+    </div>
   </div>
 </article>
+
   
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2017/06/12/物理内存相关的三个数据结构pglist_data、zone、page/" class="archive-article-date">
-  	<time datetime="2017-06-12T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-06-12</time>
-</a>
+<nav id="article-nav">
+  
+  
+    <a href="/2018/05/02/2018-03-23-计数信号量semaphore/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title"></div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
         </div>
-    	 
+        
+        
+    </div>
+</aside>
+
+
+
+	
+	<!-- ������City�氲װ���� -->
+<div id="lv-container" data-id="city" data-uid="MTAyMC8zNjE0NC8xMjY3OQ==">
+	<script type="text/javascript">
+   (function(d, s) {
+       var j, e = d.getElementsByTagName(s)[0];
+
+       if (typeof LivereTower === 'function') { return; }
+
+       j = d.createElement(s);
+       j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+       j.async = true;
+
+       e.parentNode.insertBefore(j, e);
+   })(document, 'script');
+	</script>
+<noscript> Ϊ����ʹ�����������۹����뼤��JavaScript</noscript>
+</div>
+<!-- City�氲װ��������� -->
+	
+
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2017/06/12/物理内存相关的三个数据结构pglist_data、zone、page/">物理内存相关的三个数据结构</a>
-    </h1>
+  
   
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">memery</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-      
-        </div></section>
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2015" class="archive-year">2015</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2015/06/12/linux学习线路/" class="archive-article-date">
-  	<time datetime="2015-06-12T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2015-06-12</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2015/06/12/linux学习线路/">linux 学习方法</a>
-    </h1>
   
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">学习教程</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
   
 
-    
+  
 
 
           </div>
@@ -324,9 +687,9 @@
 	var yiliaConfig = {
 		mathjax: false,
 		isHome: false,
-		isPost: false,
+		isPost: true,
 		isArchive: false,
-		isTag: true,
+		isTag: false,
 		isCategory: false,
 		open_in_new: false,
 		toc_hide_index: true,

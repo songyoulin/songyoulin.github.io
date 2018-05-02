@@ -6,15 +6,20 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://songyoulin.github.io">
-  <title>Tag: linux | SuperSong的博客</title>
+  <title>物理内存相关的三个数据结构 | SuperSong的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="SuperSong的博客">
-<meta property="og:url" content="https://songyoulin.github.io/tags/linux/index.html">
+  <meta name="description" content="来自msinglee基于linux-4.15介绍linux内存管理中跟物理内存相关的三个数据结构pglist_data、zone、page。">
+<meta name="keywords" content="linux,memery">
+<meta property="og:type" content="article">
+<meta property="og:title" content="物理内存相关的三个数据结构">
+<meta property="og:url" content="https://songyoulin.github.io/2017/06/12/物理内存相关的三个数据结构pglist_data、zone、page/index.html">
 <meta property="og:site_name" content="SuperSong的博客">
+<meta property="og:description" content="来自msinglee基于linux-4.15介绍linux内存管理中跟物理内存相关的三个数据结构pglist_data、zone、page。">
 <meta property="og:locale" content="default">
+<meta property="og:updated_time" content="2018-05-02T01:58:56.552Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="SuperSong的博客">
+<meta name="twitter:title" content="物理内存相关的三个数据结构">
+<meta name="twitter:description" content="来自msinglee基于linux-4.15介绍linux内存管理中跟物理内存相关的三个数据结构pglist_data、zone、page。">
   
     <link rel="alternative" href="/atom.xml" title="SuperSong的博客" type="application/atom+xml">
   
@@ -150,78 +155,348 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
-  
-  
+            <article id="post-物理内存相关的三个数据结构pglist_data、zone、page" class="article article-type-post " itemscope itemprop="blogPost">
+  <div class="article-inner">
     
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2017" class="archive-year">2017</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2017/06/13/伙伴系统buddy/" class="archive-article-date">
-  	<time datetime="2017-06-13T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-06-13</time>
-</a>
-        </div>
-    	 
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2017/06/13/伙伴系统buddy/">基于`linux-4.15`介绍`buddy`原理，以及`buddy`主要的`api`的实现过程和原理</a>
+    <h1 class="article-title" itemprop="name">
+      物理内存相关的三个数据结构
     </h1>
   
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">memery</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2017/06/12/物理内存相关的三个数据结构pglist_data、zone、page/" class="archive-article-date">
+        
+        <a href="/2017/06/12/物理内存相关的三个数据结构pglist_data、zone、page/" class="archive-article-date">
   	<time datetime="2017-06-12T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-06-12</time>
 </a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2017/06/12/物理内存相关的三个数据结构pglist_data、zone、page/">物理内存相关的三个数据结构</a>
-    </h1>
-  
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <blockquote>
+<p>来自msinglee<br>基于<code>linux-4.15</code>介绍<code>linux</code>内存管理中跟物理内存相关的三个数据结构<code>pglist_data</code>、<code>zone</code>、<code>page</code>。</p>
+</blockquote>
+<a id="more"></a>
+<h1 id="I-内存节点pg-data-t"><a href="#I-内存节点pg-data-t" class="headerlink" title="I. 内存节点pg_data_t"></a>I. 内存节点<code>pg_data_t</code></h1><h2 id="一-内存模型"><a href="#一-内存模型" class="headerlink" title="一. 内存模型"></a>一. 内存模型</h2><p>内存模型有以下两种：</p>
+<ul>
+<li><p>均匀存储器存取（<code>Uniform-Memory-Access</code>，简称<code>UMA</code>）模型，所有<code>CPU</code>对所有的内存访问都有相同的速度。<code>UMA</code>模型使我们最常见的内存模型，比如手机，个人电脑，嵌入式设备等。</p>
+</li>
+<li><p>非均匀存储器存取（<code>Nonuniform-Memory-Access</code>，简称<code>NUMA</code>）模型，<code>CPU</code>或多个<code>CPU</code>被分为多个节点，每一个节点都有自己的<code>local memory</code>，每一个节点访问本地内存的时候速度是最快的。但是访问其他节点的内存时，速度相对慢一些。</p>
+</li>
+</ul>
+<p>因为<code>NUMA</code>的原因，<code>linux</code>给每一个<code>node</code>中的内存簇一个特殊的数据结构，这个结构就是<code>pg_data_t</code>，一个<code>node</code>只有一个内存簇（<code>bank</code>）。每一个内存簇都对应一个<code>pg_data_t</code>。</p>
+<h2 id="二-内存节点pg-data-t的定义"><a href="#二-内存节点pg-data-t的定义" class="headerlink" title="二. 内存节点pg_data_t的定义"></a>二. 内存节点<code>pg_data_t</code>的定义</h2><p><code>pg_data_t</code>的定义如下（只列出了重要的成员）：</p>
+<pre><code>[include/linux/mmzone.h]
 
-        <div class="article-info info-on-right">
-          
+typedef struct pglist_data {
+    /* 跟zone相关的成员 */
+    struct zone node_zones[MAX_NR_ZONES];
+    struct zonelist node_zonelists[MAX_ZONELISTS];
+    int nr_zones;
+
+    /* 内存节点的信息 */
+    unsigned long node_start_pfn;     //内存节点起始的页帧号
+    unsigned long node_present_pages; //总共的物理页面数
+    unsigned long node_spanned_pages; //总共的物理地址所占的页面数，包括内存空洞
+
+    /* 内存回收相关的数据结构 */
+    wait_queue_head_t kswapd_wait;  
+    wait_queue_head_t pfmemalloc_wait;
+    struct task_struct *kswapd;       //内存回收专门的线程kswapd
+    int kswapd_order; 
+    enum zone_type kswapd_classzone_idx; 
+
+}pg_data_t;
+</code></pre><p>其中<code>zonelist</code>的定义如下：</p>
+<pre><code>[include/linux/mmzone.h]
+
+/* 这个内存结构描述了zonelist中每一个成员的信息 */
+struct zoneref {
+    struct zone *zone; //指向真正的zone
+    int zone_idx;      //zone在这个zonelist的编号（不是索引）
+};
+
+/* 包含了所有zone的数组，在UMA中，只有一个zonelist */
+struct zonelist {
+    struct zoneref _zonerefs[MAX_ZONES_PER_ZONELIST + 1];
+};
+
+/* 当UMA时，MAX_NUMNODES的值为1，
+ * 所以MAX_ZONES_PER_ZONELIST的值为MAX_NR_ZONES
+ */
+#define MAX_ZONES_PER_ZONELIST (MAX_NUMNODES * MAX_NR_ZONES)
+</code></pre><p>当<code>UMA</code>时，<code>MAX_ZONELISTS</code>的值也是1，即只有一个<code>zonelist</code>：</p>
+<pre><code>[include/linux/mmzone.h]
+
+enum {
+        ZONELIST_FALLBACK,
+#ifdef CONFIG_NUMA
+        ZONELIST_NOFALLBACK,
+#endif
+        MAX_ZONELISTS
+};
+</code></pre><p>由此可以看到，一个内存节点只有一个<code>pg_data_t</code>，在<code>UMA</code>中一个<code>pg_data_t</code>只有一个<code>zonelist</code>，一个<code>zonelist</code>可以有<code>MAX_NR_ZONES</code>。即<code>UMA</code>中一个内存节点有<code>MAX_NR_ZONES</code>个<code>zone</code></p>
+<h1 id="II-内存区zone"><a href="#II-内存区zone" class="headerlink" title="II. 内存区zone"></a>II. 内存区<code>zone</code></h1><h2 id="一-zone的定义"><a href="#一-zone的定义" class="headerlink" title="一. zone的定义"></a>一. <code>zone</code>的定义</h2><p><code>zone</code>的定义如下（只列出了重要的成员）：</p>
+<pre><code>[include/linux/mmzone.h]
+
+struct zone {
+
+    /* zone的水位，用来内存回收时使用 */
+    unsigned long watermark[NR_WMARK];
+
+    /* 记录紧急内存的大小 */
+    unsigned long nr_reserved_highatomic;
+
+    /* 每一个zone的最少保留内存，比如来自high zone
+     * 的内存分配时，如果high zone空闲内存不够用，
+     * 这个时候就会到normal zone取内存，
+     * 而这个lowmem_reserve的意义就是为了，
+     * 让high zone在normal zone取内存时不能无限制的取，
+     * 最少要保留一些给normal zone。
+     */
+    long lowmem_reserve[MAX_NR_ZONES]; 
+
+    /* 其所在的pglist_data */
+    struct pglist_data      *zone_pgdat;
+
+    /* 每一个cpu都维护一个page列表用来提高速度 */
+    struct per_cpu_pageset __percpu *pageset;
+
+    /* 第一个页的索引 */
+    unsigned long           zone_start_pfn;
+
+    /* spanned_pages 是这个zone跨越的所有物理内存的page数目
+     * 包括内存空洞，它的计算方式：
+     *  spanned_pages = zone_end_pfn - zone_start_pfn
+     */
+    unsigned long           spanned_pages;
+
+    /* present_pages 是这个zone在物理内存真实存在的所有page数目，
+     * 它的计算方式：
+     *  present_pages = spanned_pages - absent_pages
+     *  其中absent_pages指的是内存空洞的page数目
+     */
+    unsigned long           present_pages;
+
+    /* managed_pages 是这个zone被Buddy管理的所有的page数目，
+     * 计算的方式：
+     *  managed_pages = present_pages - reserved_pages
+     * 其中reserved_pages包括被Bootmem分配走的内存
+     */
+    unsigned long           managed_pages;
+
+    /* 这个zone的名字 */
+    const char              *name;
+
+    /* ZONE_PADDING是为了cache line对齐，用空间换时间。
+     * 防止cache line 中有多个不同的数据结构而同时影响多个
+     * cpu
+     */
+    ZONE_PADDING(_pad1_)
+
+    /* 包含所有的空闲页面的列表 */
+    struct free_area        free_area[MAX_ORDER];
+
+    /* zone flags, see below */
+    unsigned long           flags;
+
+    /* 用来保护free_area的锁 */
+    spinlock_t              lock;
+
+    ZONE_PADDING(_pad2_)
+
+    /* 内存规整和CMA相关的成员 */
+    #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+            unsigned long           compact_cached_free_pfn;
+            unsigned long           compact_cached_migrate_pfn[2];
+    #endif
+    #ifdef CONFIG_COMPACTION
+            unsigned int            compact_considered;
+            unsigned int            compact_defer_shift;
+            int                     compact_order_failed;
+    #endif
+    #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+            bool                    compact_blockskip_flush;
+    #endif
+
+    ZONE_PADDING(_pad3_)
+
+    /* zone统计信息 */
+    atomic_long_t           vm_stat[NR_VM_ZONE_STAT_ITEMS];
+
+}____cacheline_internodealigned_in_smp;
+</code></pre><h2 id="二-zone的类型和意义"><a href="#二-zone的类型和意义" class="headerlink" title="二. zone的类型和意义"></a>二. <code>zone</code>的类型和意义</h2><p><code>zone</code>的类型有如下：</p>
+<pre><code>enum zone_type {
+
+#ifdef CONFIG_ZONE_DMA
+        ZONE_DMA,
+#endif
+#ifdef CONFIG_ZONE_DMA32
+        ZONE_DMA32,
+#endif
+        ZONE_NORMAL,
+#ifdef CONFIG_HIGHMEM
+        ZONE_HIGHMEM,
+#endif
+        ZONE_MOVABLE,
+#ifdef CONFIG_ZONE_DEVICE
+        ZONE_DEVICE,
+#endif
+        __MAX_NR_ZONES
+};
+</code></pre><p>在<code>32Bit</code>的<code>CPU</code>上，我们经常提及的<code>zone</code>有三个：<code>ZONE_DMA</code>、<code>ZONE_NORMAL</code>、<code>ZONE_HIGHMEM</code>。先说这些<code>zone</code>的来源，为什么要分这些<code>zone</code>。</p>
+<p>简单的来说，把物理内存分成一个一个<code>zone</code>的原因就是因为硬件的限制或者不足！！</p>
+<p>先说<code>ZONE_DMA</code>，有这个<code>zone</code>的原因就是因为某些硬件的<code>DMA</code>引擎的缺陷导致的。比如<code>x86</code>的<code>ISA</code>总线的<code>DMA</code>只能访问<code>16MB</code>以下的内存。所以就分出一个单独<code>zone</code>，这个<code>zone</code>的地址就是<code>0 ~ 16MB</code>。每次<code>ISA</code>总线的<code>DMA</code>申请内存时，就只用这个<code>zone</code>里的内存。</p>
+<p>再说<code>ZONE_HIGHMEM</code>，有这个<code>zone</code>的原因是因为虚拟地址不够，而物理内存又过大。在<code>linux</code>中，虚拟地址<code>0 ~ 3G</code>划分给用户空间，<code>3G ~ 4G</code>划分给内核空间。所以我们知道内核空间只有<code>1G</code>的虚拟地址可以使用，而内核为了方便起见，通常把物理地址和虚拟地址进行线性映射，但是物理内存通常都超过了<code>1G</code>，所以这<code>1G</code>的虚拟地址是不能把所有的物理内存都线性映射完的。所以，只取一部分和内核虚拟地址进行线性映射。这部分线性映射的内存通常被称为<code>low memory</code>，而剩下的物理内存就是<code>high memory</code>，这部分<code>high memory</code>就是<code>ZONE_HIGHMEM</code>。</p>
+<p>最后<code>ZONE_NORMAL</code>，<code>low memory</code>减去<code>ZONE_DMA</code>的地方就是<code>ZONE_NORMAL</code>了。</p>
+<p>在<code>64bit</code>架构的<code>CPU</code>里，还有<code>ZONE_DMA32</code>，这个也是因为<code>DMA</code>引擎的缺陷，只能访问<code>4G</code>以下的内存，所以把<code>16MB(除去ZONE_DMA) ~ 4GB</code>（如果你的物理内存有大于或等于<code>4G</code>的话）的内存被称为<code>ZONE_DMA32</code>。</p>
+<p>如果没有这些硬件的限制，就不会有这些<code>zone</code>的存在，比如在如今大多数的手机或者电脑上，就没有<code>ZONE_HIGHMEM</code>这个<code>zone</code>了，原因是因为<code>64Bit</code>的<code>CPU</code>可寻址的范围非常大，足以把所有的物理内存都永久的线性映射下来。</p>
+<p>假如一个<code>x86_64</code>的电脑有<code>6G</code>物理内存，那么在这台电脑上会有三个<code>zone</code>:</p>
+<ol>
+<li><code>ZONE_DMA</code> : <code>0 ~ 16MB</code></li>
+<li><code>ZONE_DMA32</code> : <code>16MB ~ 4GB</code></li>
+<li><code>ZONE_NORMAL</code> : <code>4GB ~ 6GB</code></li>
+</ol>
+<p>假如一个<code>x86_64</code>的电脑有<code>3G</code>物理内存，那么在这台电脑上会有两个<code>zone</code>:</p>
+<ol>
+<li><code>ZONE_DMA</code> : <code>0 ~ 16MB</code></li>
+<li><code>ZONE_DMA32</code> : <code>16MB ~ 3GB</code></li>
+</ol>
+<h2 id="三-zone中的一些成员的作用"><a href="#三-zone中的一些成员的作用" class="headerlink" title="三. zone中的一些成员的作用"></a>三. <code>zone</code>中的一些成员的作用</h2><h3 id="1-包含所有空闲页面的free-area数组"><a href="#1-包含所有空闲页面的free-area数组" class="headerlink" title="1. 包含所有空闲页面的free_area数组"></a>1. 包含所有空闲页面的<code>free_area</code>数组</h3><pre><code>struct free_area free_area[MAX_ORDER];
+</code></pre><p>在<code>32Bit</code>的<code>CPU</code>上<code>MAX_ORDER</code>的值一般是11。<br><code>free_are</code>的定义如下：</p>
+<pre><code>[include/linux/mmzone.h]
+
+struct free_area {
+    struct list_head free_list[MIGRATE_TYPES];
+    unsigned long    nr_free;
+};
+</code></pre><p><code>MIGRATE_TYPES</code>的定义如下：</p>
+<pre><code>enum migratetype {
+        MIGRATE_UNMOVABLE,   //不可迁移
+        MIGRATE_MOVABLE,     //可迁移
+        MIGRATE_RECLAIMABLE, //可被回收
+        MIGRATE_PCPTYPES,    //跟per_cpu_pageset有关的迁移类型的个数
+        MIGRATE_HIGHATOMIC = MIGRATE_PCPTYPES,
+#ifdef CONFIG_CMA
+        MIGRATE_CMA,
+#endif
+#ifdef CONFIG_MEMORY_ISOLATION
+        MIGRATE_ISOLATE,
+#endif
+        MIGRATE_TYPES
+};
+</code></pre><p><code>migratetype</code>定义了一个<code>page</code>的迁移类型。<code>free_area</code>为每一个迁移类型都单独设一个链表，以方便维护。<br>​<br>所以<code>free_area</code>这个数组包含了这个<code>zone</code>的所有空闲页面，并按照不通的迁移类型把这些页面放在不通的链表中方便管理。</p>
+<h3 id="2-每一个core维护的本地页链表per-cpu-pageset"><a href="#2-每一个core维护的本地页链表per-cpu-pageset" class="headerlink" title="2. 每一个core维护的本地页链表per_cpu_pageset"></a>2. 每一个<code>core</code>维护的本地页链表<code>per_cpu_pageset</code></h3><pre><code>struct per_cpu_pageset __percpu *pageset;
+</code></pre><p>其中<code>per_cpu_pageset</code>的定义如下：</p>
+<pre><code>struct per_cpu_pageset {
+        struct per_cpu_pages pcp;
+#ifdef CONFIG_NUMA
+        s8 expire;
+        u16 vm_numa_stat_diff[NR_VM_NUMA_STAT_ITEMS];
+#endif
+#ifdef CONFIG_SMP
+        s8 stat_threshold;
+        s8 vm_stat_diff[NR_VM_ZONE_STAT_ITEMS];
+#endif
+};
+
+struct per_cpu_pages {
+        int count;
+        int high;
+        int batch;
+
+        /* 3个不同的迁移类型的链表 */
+        struct list_head lists[MIGRATE_PCPTYPES];
+};
+</code></pre><p>每个<code>cpu core</code>都维护一个<code>per_cpu_pageset</code>，用来加速只分配一个<code>page</code>的情况。当只申请一个页的时候，可以直接从<code>per_cpu_pageset</code>中获取，<code>per_cpu_pages-&gt;high</code>记录了这个<code>cpu core</code>维护的<code>per_cpu_pageset</code>的最度的个数，如果超过了这个个数，就把其中的<code>per_cpu_pages-&gt;batch</code>个还给<code>buddy</code>系统。如果发现<code>per_cpu_pageset</code>中没有可分配的页，就从<code>buddy</code>中获取<code>batch</code>个。</p>
+<h1 id="III-MMU管理内存的最小单位–页page"><a href="#III-MMU管理内存的最小单位–页page" class="headerlink" title="III. MMU管理内存的最小单位–页page"></a>III. <code>MMU</code>管理内存的最小单位–页<code>page</code></h1><h2 id="一-page的定义："><a href="#一-page的定义：" class="headerlink" title="一. page的定义："></a>一. <code>page</code>的定义：</h2><p>因为<code>linux</code>中有很多<code>page</code>结构体，所以<code>linux</code>对这个结构体的大小异常的在意，所以这个结构体中有许多<code>union</code>来减小大小。</p>
+<pre><code>struct page {
+
+    /* 描述这个页面的状态：脏页、被上锁、正在写回？等等 */
+    unsigned long flags;
+
+    union {
+        /* 如果是有文件背景的page，指向这个文件相关的信息，低bit为0（为0时也可能是NULL）；
+         * 如果是匿名页，指向一个anon_vma结构体，低Bit为1。*/
+        struct address_space *mapping;
+        void *s_mem;
+        atomic_t compound_mapcount;
+    };
+
+    union {
+        struct {
+            union {
+                atomic_t _mapcount; //这个页面被映射的次数 - 1
+            };
+            atomic_t _refcount;        //这个页面被引用的次数
+        };
+    };
+
+    union {
+        struct list_head lru;        //lru算法页面回收时使用
+    };
+
+    struct rcu_head rcu_head;
+
+    union {
+        unsigned long private;
+    };
+
+#ifdef CONFIG_MEMCG
+        struct mem_cgroup *mem_cgroup;
+#endif
+}
+</code></pre><h2 id="二-存储所有page的数组mem-map"><a href="#二-存储所有page的数组mem-map" class="headerlink" title="二. 存储所有page的数组mem_map"></a>二. 存储所有<code>page</code>的数组<code>mem_map</code></h2><p>在<code>UMA</code>系统中，只有一个节点，那么就会有一个全局的<code>mem_map</code>存放所有的物理页面。</p>
+<p><code>mem_map</code>的定义在：</p>
+<pre><code>[mm/memory.c]
+
+struct page *mem_map;
+</code></pre><p>有两个宏就是利用<code>mem_map</code>来将<code>page</code>和<code>pfn</code>进行转换的：</p>
+<pre><code>[include/asm-generic/memory_model.h]
+
+#define __pfn_to_page(pfn)  (mem_map + ((pfn) - ARCH_PFN_OFFSET))
+#define __page_to_pfn(page) ((unsigned long)((page) - mem_map) + ARCH_PFN_OFFSET)
+</code></pre>
+      
+
+      
+        <div class="page-reward">
+          <a href="javascript:;" class="page-reward-btn tooltip-top">
+            <div class="tooltip tooltip-east">
+            <span class="tooltip-item">
+              赏
+            </span>
+            <span class="tooltip-content">
+              <span class="tooltip-text">
+                <span class="tooltip-inner">
+                  <p class="reward-p"><i class="icon icon-quo-left"></i>谢谢你请我吃糖果<i class="icon icon-quo-right"></i></p>
+                  <div class="reward-box">
+                    
+                    <div class="reward-box-item">
+                      <img class="reward-img" src="/assets/img/alipay.jpg">
+                      <span class="reward-type">支付宝</span>
+                    </div>
+                    
+                    
+                    <div class="reward-box-item">
+                      <img class="reward-img" src="/assets/img/weixinpay.jpg">
+                      <span class="reward-type">微信</span>
+                    </div>
+                    
+                  </div>
+                </span>
+              </span>
+            </span>
+          </div>
+          </a>
+        </div>
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags icon"></i>
 		<ul class="article-tag-list">
@@ -237,71 +512,136 @@
 		</ul>
 	</div>
 
-          
+      
 
+      
+
+      
+        
+<div class="share-btn share-icons tooltip-left">
+  <div class="tooltip tooltip-east">
+    <span class="tooltip-item">
+      <a href="javascript:;" class="share-sns share-outer">
+        <i class="icon icon-share"></i>
+      </a>
+    </span>
+    <span class="tooltip-content">
+      <div class="share-wrap">
+        <div class="share-icons">
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="icon icon-weibo"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="icon icon-weixin"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="icon icon-qq"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="icon icon-douban"></i>
+          </a>
+          <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a>
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="icon icon-facebook"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="icon icon-twitter"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="icon icon-google"></i>
+          </a>
         </div>
-        <div class="clearfix"></div>
-    </header>
+      </div>
+    </span>
+  </div>
+</div>
+
+<div class="page-modal wx-share js-wx-box">
+    <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//pan.baidu.com/share/qrcode?url=https://songyoulin.github.io/2017/06/12/物理内存相关的三个数据结构pglist_data、zone、page/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div class="mask js-mask"></div>
+      
+      <div class="clearfix"></div>
+    </div>
   </div>
 </article>
+
   
-    
-    
-      
-        </div></section>
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2015" class="archive-year">2015</a>
+<nav id="article-nav">
+  
+    <a href="/2017/06/13/伙伴系统buddy/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          基于`linux-4.15`介绍`buddy`原理，以及`buddy`主要的`api`的实现过程和原理
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2016/02/12/memory_barrier/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">memeory barrier</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
         </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2015/06/12/linux学习线路/" class="archive-article-date">
-  	<time datetime="2015-06-12T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2015-06-12</time>
-</a>
-        </div>
-    	 
+        
+        
+    </div>
+</aside>
+
+
+
+	
+	<!-- ������City�氲װ���� -->
+<div id="lv-container" data-id="city" data-uid="MTAyMC8zNjE0NC8xMjY3OQ==">
+	<script type="text/javascript">
+   (function(d, s) {
+       var j, e = d.getElementsByTagName(s)[0];
+
+       if (typeof LivereTower === 'function') { return; }
+
+       j = d.createElement(s);
+       j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+       j.async = true;
+
+       e.parentNode.insertBefore(j, e);
+   })(document, 'script');
+	</script>
+<noscript> Ϊ����ʹ�����������۹����뼤��JavaScript</noscript>
+</div>
+<!-- City�氲װ��������� -->
+	
+
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2015/06/12/linux学习线路/">linux 学习方法</a>
-    </h1>
+  
   
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">学习教程</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
   
 
-    
+  
+
+  
 
 
           </div>
@@ -324,9 +664,9 @@
 	var yiliaConfig = {
 		mathjax: false,
 		isHome: false,
-		isPost: false,
+		isPost: true,
 		isArchive: false,
-		isTag: true,
+		isTag: false,
 		isCategory: false,
 		open_in_new: false,
 		toc_hide_index: true,
