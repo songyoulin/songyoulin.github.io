@@ -6,15 +6,20 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://songyoulin.github.io">
-  <title>SuperSong的博客</title>
+  <title> linux同步和互斥 | SuperSong的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="SuperSong的博客">
-<meta property="og:url" content="https://songyoulin.github.io/index.html">
+  <meta name="description" content="来自msinglee">
+<meta name="keywords" content="linux">
+<meta property="og:type" content="article">
+<meta property="og:title" content=" linux同步和互斥">
+<meta property="og:url" content="https://songyoulin.github.io/2017/07/14/计数信号量semaphore/index.html">
 <meta property="og:site_name" content="SuperSong的博客">
+<meta property="og:description" content="来自msinglee">
 <meta property="og:locale" content="default">
+<meta property="og:updated_time" content="2018-05-02T03:15:38.494Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="SuperSong的博客">
+<meta name="twitter:title" content=" linux同步和互斥">
+<meta name="twitter:description" content="来自msinglee">
   
     <link rel="alternative" href="/atom.xml" title="SuperSong的博客" type="application/atom+xml">
   
@@ -150,93 +155,14 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
-  
-    <article id="post-原子操作" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+            <article id="post-计数信号量semaphore" class="article article-type-post " itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <header class="article-header">
         
   
-    <h1 itemprop="name">
-      <a class="article-title" href="/2017/08/16/原子操作/">基于`原子操作</a>
-    </h1>
-  
-
-        
-        <a href="/2017/08/16/原子操作/" class="archive-article-date">
-  	<time datetime="2017-08-16T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-08-16</time>
-</a>
-        
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <blockquote>
-<p>来自msinglee</p>
-        
-          <a class="article-more-a" href="/2017/08/16/原子操作/#more">more >></a>
-        
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-      
-
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2017/08/16/原子操作/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-计数信号量semaphore" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2017/07/14/计数信号量semaphore/"> linux同步和互斥</a>
+    <h1 class="article-title" itemprop="name">
+       linux同步和互斥
     </h1>
   
 
@@ -250,167 +176,308 @@
     <div class="article-entry" itemprop="articleBody">
       
         <blockquote>
-<p>来自msinglee<br>
-        
-          <a class="article-more-a" href="/2017/07/14/计数信号量semaphore/#more">more >></a>
-        
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-      
-
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2017/07/14/计数信号量semaphore/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-自旋锁spinlock" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2017/07/13/自旋锁spinlock/">自旋锁spinlock</a>
-    </h1>
-  
-
-        
-        <a href="/2017/07/13/自旋锁spinlock/" class="archive-article-date">
-  	<time datetime="2017-07-13T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-07-13</time>
-</a>
-        
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <blockquote>
-<p>来自msinglee<br>
-        
-          <a class="article-more-a" href="/2017/07/13/自旋锁spinlock/#more">more >></a>
-        
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-      
-
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2017/07/13/自旋锁spinlock/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-互斥锁mutex" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2017/06/15/互斥锁mutex/">linux同步和互斥</a>
-    </h1>
-  
-
-        
-        <a href="/2017/06/15/互斥锁mutex/" class="archive-article-date">
-  	<time datetime="2017-06-15T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-06-15</time>
-</a>
-        
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <blockquote>
-<p>本文介绍<code>linux</code>中互斥锁<code>Mutex</code>的实现。以及<code>spinlock</code>的优化<code>MCS</code>锁在<code>Linux</code>的实现方式<code>osq</code>锁</p>
+<p>来自msinglee<br><a id="more"></a></p>
 </blockquote>
-        
-          <a class="article-more-a" href="/2017/06/15/互斥锁mutex/#more">more >></a>
-        
+<h1 id="I-计数信号量数据结构"><a href="#I-计数信号量数据结构" class="headerlink" title="I. 计数信号量数据结构"></a>I. 计数信号量数据结构</h1><p>计数信号量数据结构<code>semaphore</code>定义如下：</p>
+<pre><code>struct semaphore {
+    raw_spinlock_t   lock;
+    unsigned int     count;
+    struct list_head wait_list;
+};
+</code></pre><p><code>lock</code>：是一个<code>spinlock</code>，对<code>count</code>和<code>wait_list</code>的操作进行保护。<br><code>count</code>：是表示允许进入临界区的内核代码记性路径的个数。<br><code>wait_list</code>：是记录在等待这个计数信号量而睡眠的进程（用<code>semaphore_waiter</code>来代表一个睡眠的进程）的链表。没有获取到计数信号量的进程会被放到这个链表上。</p>
+<h1 id="II-计数信号量的初始化"><a href="#II-计数信号量的初始化" class="headerlink" title="II. 计数信号量的初始化"></a>II. 计数信号量的初始化</h1><p>初始化计数信号量的方式有两种：</p>
+<ol>
+<li><p><code>DEFINE_SEMAPHORE</code>:</p>
+<pre><code>#define __SEMAPHORE_INITIALIZER(name, n)                \
+{                                                       \
+    .lock      = __RAW_SPIN_LOCK_UNLOCKED((name).lock), \
+    .count     = n,                                     \
+    .wait_list = LIST_HEAD_INIT((name).wait_list),      \
+}
+
+#define DEFINE_SEMAPHORE(name)  \
+    struct semaphore name = __SEMAPHORE_INITIALIZER(name, 1)
+</code></pre></li>
+<li><p><code>sema_init</code>:</p>
+<pre><code>static inline void sema_init(struct semaphore *sem, int val)
+{
+    static struct lock_class_key __key;
+    *sem = (struct semaphore) __SEMAPHORE_INITIALIZER(*sem, val);
+    lockdep_init_map(&amp;sem-&gt;lock.dep_map, &quot;semaphore-&gt;lock&quot;, &amp;__key, 0);
+}
+</code></pre></li>
+</ol>
+<h1 id="III-计数信号量的down操作"><a href="#III-计数信号量的down操作" class="headerlink" title="III. 计数信号量的down操作"></a>III. 计数信号量的<code>down</code>操作</h1><h2 id="一-down操作的api"><a href="#一-down操作的api" class="headerlink" title="一. down操作的api"></a>一. <code>down</code>操作的<code>api</code></h2><table>
+<thead>
+<tr>
+<th style="text-align:center"><code>down</code>操作</th>
+<th style="text-align:left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center"><code>down</code></td>
+<td style="text-align:left">获取计数信号量，如果没获取到就睡眠，直到获取到</td>
+</tr>
+<tr>
+<td style="text-align:center"><code>down_interruptible</code></td>
+<td style="text-align:left">可以被信号唤醒的down操作</td>
+</tr>
+<tr>
+<td style="text-align:center"><code>down_killable</code></td>
+<td style="text-align:left">可以被致命信号唤醒的down操作</td>
+</tr>
+<tr>
+<td style="text-align:center"><code>down_trylock</code></td>
+<td style="text-align:left">尝试获取计数信号量，如果获取不到就马上返回</td>
+</tr>
+<tr>
+<td style="text-align:center"><code>down_timeout</code></td>
+<td style="text-align:left">可以被timer叫醒的down操作</td>
+</tr>
+</tbody>
+</table>
+<h2 id="二-down代码解析"><a href="#二-down代码解析" class="headerlink" title="二. down代码解析"></a>二. <code>down</code>代码解析</h2><p>先来看<code>down</code>函数：</p>
+<pre><code>void down(struct semaphore *sem)
+{               
+    unsigned long flags; 
+
+    //获取自旋锁
+    raw_spin_lock_irqsave(&amp;sem-&gt;lock, flags);
+
+    if (likely(sem-&gt;count &gt; 0))
+        //如果count &gt; 0，把count--，获取到计数信号量
+        sem-&gt;count--;
+    else 
+        //如果count = 0
+        __down(sem);
+
+    //释放自旋锁
+    raw_spin_unlock_irqrestore(&amp;sem-&gt;lock, flags);
+}
+</code></pre><p>如果获取不到计数信号量，则调用<code>__down</code>：</p>
+<pre><code>#define LONG_MAX             ((long)(~0UL&gt;&gt;1))
+#define MAX_SCHEDULE_TIMEOUT LONG_MAX
+static noinline void __sched __down(struct semaphore *sem)
+{       
+    __down_common(sem, TASK_UNINTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+}
+</code></pre><p>最终调用到<code>__down_common(sem, TASK_UNINTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT)</code>：</p>
+<pre><code>static inline int __sched __down_common(struct semaphore *sem, long state,
+                                                  long timeout)
+{       
+    struct semaphore_waiter waiter;
+
+    //把本进程的semaphore_waiter挂到信号量的wait_list链表的尾部
+    list_add_tail(&amp;waiter.list, &amp;sem-&gt;wait_list);
+    waiter.task = current;
+    waiter.up = false;
+
+    for (;;) {
+        //可以被信号打断睡眠二唤醒
+        if (signal_pending_state(state, current))
+            goto interrupted;
+
+        //如果是超时而被唤醒
+        if (unlikely(timeout &lt;= 0))
+            goto timed_out;
+
+        __set_current_state(state);
+
+        //进入睡眠之前释放spinlock
+        raw_spin_unlock_irq(&amp;sem-&gt;lock);
+        //主动让出cpu，会睡眠，所以之前会释放spinlock。
+        timeout = schedule_timeout(timeout);
+        //重新获取spinlock
+        raw_spin_lock_irq(&amp;sem-&gt;lock);
+
+        //如果是获取到了计数信号量而被唤醒
+        if (waiter.up) 
+            return 0;
+    }
+
+ timed_out:
+    list_del(&amp;waiter.list);
+    return -ETIME;
+
+ interrupted:
+    list_del(&amp;waiter.list);
+    return -EINTR;
+}
+</code></pre><p>其中<code>semaphore_waiter</code>是一个描述所有获取计数信号量失败的进程，每一个获取计数信号量失败的进程都有一个<code>semaphore_waiter</code>：</p>
+<pre><code>struct semaphore_waiter {
+    //作为一个节点放入计数信号量的睡眠任务链表中
+    struct list_head list;
+    //进程
+    struct task_struct *task;
+    //是否获取到了计数信号量
+    bool up;
+};
+</code></pre><p>而<code>schedule_timeout</code>这个函数先判断<code>timeout</code>入参是不是<code>MAX_SCHEDULE_TIMEOUT</code>，如果是的话，忽略<code>timeout</code>的值，直接调用<code>schedule</code>进行睡眠让出<code>cpu</code>。反之如果<code>timeout</code>不是<code>MAX_SCHEDULE_TIMEOUT</code>，且大于0，就新建立一个<code>timer</code>，如果过了<code>timeout</code>时间后也没获取到计数信号量的话，就被<code>timer</code>唤醒。需要注意的是，<code>down</code>函数的入参是<code>TASK_UNINTERRUPTIBLE</code>和<code>MAX_SCHEDULE_TIMEOUT</code>相当于不可以被打断，并且一直睡眠直到获取到计数信号量位置。<code>schedule_timeout</code>的函数实现如下：<br>​<br>    signed long __sched schedule_timeout(signed long timeout)<br>    {<br>        struct timer_list timer;<br>        unsigned long expire;</p>
+<pre><code>    switch (timeout)
+    {
+    //如果是MAX_SCHEDULE_TIMEOUT，则忽略timeout参数
+    case MAX_SCHEDULE_TIMEOUT:
+        //引发调度让出cpu
+        schedule();
+        goto out;
+    default:
+        if (timeout &lt; 0) {
+            printk(KERN_ERR &quot;schedule_timeout: wrong timeout &quot;
+                    &quot;value %lx\n&quot;, timeout);
+            dump_stack();
+            current-&gt;state = TASK_RUNNING;
+            goto out;
+        }
+    }
+
+    expire = timeout + jiffies;
+
+    //创建一个timer
+    setup_timer_on_stack(&amp;timer, process_timeout, (unsigned long)current);
+    __mod_timer(&amp;timer, expire, false);
+
+    //引发调度让出cpu
+    schedule();
+
+    del_singleshot_timer_sync(&amp;timer);
+    destroy_timer_on_stack(&amp;timer);
+
+    timeout = expire - jiffies;
+
+out:
+        return timeout &lt; 0 ? 0 : timeout;
+}
+</code></pre><h2 id="二-down-interruptible解析"><a href="#二-down-interruptible解析" class="headerlink" title="二. down_interruptible解析"></a>二. <code>down_interruptible</code>解析</h2><pre><code>int down_interruptible(struct semaphore *sem)
+{
+    unsigned long flags;
+    int result = 0;
+
+    raw_spin_lock_irqsave(&amp;sem-&gt;lock, flags);
+    if (likely(sem-&gt;count &gt; 0))
+        sem-&gt;count--;
+    else
+        result = __down_interruptible(sem);
+    raw_spin_unlock_irqrestore(&amp;sem-&gt;lock, flags);
+
+    return result;
+}
+
+static noinline int __sched __down_interruptible(struct semaphore *sem)
+{
+    return __down_common(sem, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+}
+</code></pre><p>可以看到<code>down_interruptible</code>和<code>down</code>不同的是<code>TASK_INTERRUPTIBLE</code>入参，这就意味着，<code>down_interruptible</code>可以被信号唤醒。</p>
+<h2 id="三-down-killable解析"><a href="#三-down-killable解析" class="headerlink" title="三. down_killable解析"></a>三. <code>down_killable</code>解析</h2><pre><code>int down_interruptible(struct semaphore *sem)
+{
+    unsigned long flags;
+    int result = 0; 
+
+    raw_spin_lock_irqsave(&amp;sem-&gt;lock, flags);
+    if (likely(sem-&gt;count &gt; 0))
+        sem-&gt;count--;
+    else
+        result = __down_interruptible(sem);
+    raw_spin_unlock_irqrestore(&amp;sem-&gt;lock, flags);
+
+    return result;
+}
+
+static noinline int __sched __down_killable(struct semaphore *sem)
+{
+    return __down_common(sem, TASK_KILLABLE, MAX_SCHEDULE_TIMEOUT);
+}
+</code></pre><p>跟<code>down</code>不同的是<code>TASK_KILLABLE</code>，这个是可以让睡眠的进程被致命性信号杀死。</p>
+<h2 id="四-down-trylock解析"><a href="#四-down-trylock解析" class="headerlink" title="四. down_trylock解析"></a>四. <code>down_trylock</code>解析</h2><pre><code>int down_trylock(struct semaphore *sem)
+{
+    unsigned long flags;
+    int count;
+
+    raw_spin_lock_irqsave(&amp;sem-&gt;lock, flags);
+    count = sem-&gt;count - 1;
+    if (likely(count &gt;= 0))
+        sem-&gt;count = count;
+    raw_spin_unlock_irqrestore(&amp;sem-&gt;lock, flags);
+
+    return (count &lt; 0);
+}
+</code></pre><p>尝试获取计数信号量，如果获取不到就返回。</p>
+<h2 id="五-down-timeout解析"><a href="#五-down-timeout解析" class="headerlink" title="五. down_timeout解析"></a>五. <code>down_timeout</code>解析</h2><pre><code>int down_timeout(struct semaphore *sem, long timeout)
+{
+    unsigned long flags;
+    int result = 0;
+
+    raw_spin_lock_irqsave(&amp;sem-&gt;lock, flags);
+    if (likely(sem-&gt;count &gt; 0))
+        sem-&gt;count--;
+    else
+        result = __down_timeout(sem, timeout);
+    raw_spin_unlock_irqrestore(&amp;sem-&gt;lock, flags);
+
+    return result;
+}
+
+static noinline int __sched __down_timeout(struct semaphore *sem, long timeout)
+{               
+    return __down_common(sem, TASK_UNINTERRUPTIBLE, timeout);
+}
+</code></pre><p>可以看到<code>down_timeout</code>是不可以被信号打断唤醒，但是过了一段时间之后会被<code>timer</code>唤醒。</p>
+<h1 id="IV-计数信号量的up操作"><a href="#IV-计数信号量的up操作" class="headerlink" title="IV. 计数信号量的up操作"></a>IV. 计数信号量的<code>up</code>操作</h1><p><code>up</code>操作是增加计数信号量的增量操作。与<code>down</code>相反。</p>
+<pre><code>void up(struct semaphore *sem)
+{       
+    unsigned long flags;
+
+    raw_spin_lock_irqsave(&amp;sem-&gt;lock, flags);
+    if (likely(list_empty(&amp;sem-&gt;wait_list)))
+        sem-&gt;count++;
+    else    
+        __up(sem);
+    raw_spin_unlock_irqrestore(&amp;sem-&gt;lock, flags);
+}
+</code></pre><p>先判断计数信号量的<code>wait_list</code>是否为空，如果为空说明没有睡眠在这个计数信号量的进程，就直接<code>count++</code>。如果睡眠链表不为空则调用<code>__up</code>：</p>
+<pre><code>static noinline void __sched __up(struct semaphore *sem)v
+{       
+    struct semaphore_waiter *waiter = list_first_entry(&amp;sem-&gt;wait_list,
+                                            struct semaphore_waiter, list);
+    list_del(&amp;waiter-&gt;list);
+    waiter-&gt;up = true;
+    wake_up_process(waiter-&gt;task);
+}
+</code></pre><p>先用<code>list_first_entry</code>来寻找睡眠链表中的第一个进程，然后把这个进程从链表上移除，设置其<code>up</code>为<code>true</code>，告诉这个进程获取了计数信号量。最后再唤醒这个进程。</p>
+
       
 
+      
+        <div class="page-reward">
+          <a href="javascript:;" class="page-reward-btn tooltip-top">
+            <div class="tooltip tooltip-east">
+            <span class="tooltip-item">
+              赏
+            </span>
+            <span class="tooltip-content">
+              <span class="tooltip-text">
+                <span class="tooltip-inner">
+                  <p class="reward-p"><i class="icon icon-quo-left"></i>谢谢你请我吃糖果<i class="icon icon-quo-right"></i></p>
+                  <div class="reward-box">
+                    
+                    <div class="reward-box-item">
+                      <img class="reward-img" src="/assets/img/alipay.jpg">
+                      <span class="reward-type">支付宝</span>
+                    </div>
+                    
+                    
+                    <div class="reward-box-item">
+                      <img class="reward-img" src="/assets/img/weixinpay.jpg">
+                      <span class="reward-type">微信</span>
+                    </div>
+                    
+                  </div>
+                </span>
+              </span>
+            </span>
+          </div>
+          </a>
+        </div>
       
     </div>
     <div class="article-info article-info-index">
@@ -430,16 +497,84 @@
       
 
       
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2017/06/15/互斥锁mutex/">展开全文 >></a>
-        </p>
-      
 
+      
+        
+<div class="share-btn share-icons tooltip-left">
+  <div class="tooltip tooltip-east">
+    <span class="tooltip-item">
+      <a href="javascript:;" class="share-sns share-outer">
+        <i class="icon icon-share"></i>
+      </a>
+    </span>
+    <span class="tooltip-content">
+      <div class="share-wrap">
+        <div class="share-icons">
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="icon icon-weibo"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="icon icon-weixin"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="icon icon-qq"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="icon icon-douban"></i>
+          </a>
+          <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a>
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="icon icon-facebook"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="icon icon-twitter"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="icon icon-google"></i>
+          </a>
+        </div>
+      </div>
+    </span>
+  </div>
+</div>
+
+<div class="page-modal wx-share js-wx-box">
+    <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//pan.baidu.com/share/qrcode?url=https://songyoulin.github.io/2017/07/14/计数信号量semaphore/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div class="mask js-mask"></div>
       
       <div class="clearfix"></div>
     </div>
   </div>
 </article>
+
+  
+<nav id="article-nav">
+  
+    <a href="/2017/08/16/原子操作/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          基于`原子操作
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2017/07/13/自旋锁spinlock/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">自旋锁spinlock</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
 
 <aside class="wrap-side-operation">
     <div class="mod-side-operation">
@@ -459,338 +594,35 @@
 
 
 
+	
+	<!-- ������City�氲װ���� -->
+<div id="lv-container" data-id="city" data-uid="MTAyMC8zNjE0NC8xMjY3OQ==">
+	<script type="text/javascript">
+   (function(d, s) {
+       var j, e = d.getElementsByTagName(s)[0];
+
+       if (typeof LivereTower === 'function') { return; }
+
+       j = d.createElement(s);
+       j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+       j.async = true;
+
+       e.parentNode.insertBefore(j, e);
+   })(document, 'script');
+	</script>
+<noscript> Ϊ����ʹ�����������۹����뼤��JavaScript</noscript>
+</div>
+<!-- City�氲װ��������� -->
+	
 
   
-    <article id="post-伙伴系统buddy" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
   
-    <h1 itemprop="name">
-      <a class="article-title" href="/2017/06/13/伙伴系统buddy/">基于`linux-4.15`介绍`buddy`原理，以及`buddy`主要的`api`的实现过程和原理</a>
-    </h1>
   
 
-        
-        <a href="/2017/06/13/伙伴系统buddy/" class="archive-article-date">
-  	<time datetime="2017-06-13T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-06-13</time>
-</a>
-        
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <blockquote>
-<p>来自msinglee<br>
-        
-          <a class="article-more-a" href="/2017/06/13/伙伴系统buddy/#more">more >></a>
-        
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">memery</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-      
-
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2017/06/13/伙伴系统buddy/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-物理内存相关的三个数据结构pglist_data、zone、page" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2017/06/12/物理内存相关的三个数据结构pglist_data、zone、page/">物理内存相关的三个数据结构</a>
-    </h1>
   
 
-        
-        <a href="/2017/06/12/物理内存相关的三个数据结构pglist_data、zone、page/" class="archive-article-date">
-  	<time datetime="2017-06-12T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-06-12</time>
-</a>
-        
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <blockquote>
-<p>来自msinglee<br>基于<code>linux-4.15</code>介绍<code>linux</code>内存管理中跟物理内存相关的三个数据结构<code>pglist_data</code>、<code>zone</code>、<code>page</code>。</p>
-</blockquote>
-        
-          <a class="article-more-a" href="/2017/06/12/物理内存相关的三个数据结构pglist_data、zone、page/#more">more >></a>
-        
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">memery</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-      
-
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2017/06/12/物理内存相关的三个数据结构pglist_data、zone、page/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-memory_barrier" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/02/12/memory_barrier/">memeory barrier</a>
-    </h1>
   
 
-        
-        <a href="/2016/02/12/memory_barrier/" class="archive-article-date">
-  	<time datetime="2016-02-12T00:55:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2016-02-12</time>
-</a>
-        
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <blockquote>
-</blockquote>
-        
-          <a class="article-more-a" href="/2016/02/12/memory_barrier/#more">more >></a>
-        
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">linux kernel</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">memeory</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">cache</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-      
-
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2016/02/12/memory_barrier/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-linux学习线路" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/06/12/linux学习线路/">linux 学习方法</a>
-    </h1>
-  
-
-        
-        <a href="/2015/06/12/linux学习线路/" class="archive-article-date">
-  	<time datetime="2015-06-12T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2015-06-12</time>
-</a>
-        
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <blockquote>
-<p>来自知乎</p>
-</blockquote>
-        
-          <a class="article-more-a" href="/2015/06/12/linux学习线路/#more">more >></a>
-        
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">学习教程</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-      
-
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2015/06/12/linux学习线路/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
 
 
@@ -813,8 +645,8 @@
     <script>
 	var yiliaConfig = {
 		mathjax: false,
-		isHome: true,
-		isPost: false,
+		isHome: false,
+		isPost: true,
 		isArchive: false,
 		isTag: false,
 		isCategory: false,
