@@ -8,18 +8,18 @@
   <link rel="dns-prefetch" href="https://songyoulin.github.io">
   <title>物理内存相关的三个数据结构 | SuperSong的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="来自msinglee基于linux-4.15介绍linux内存管理中跟物理内存相关的三个数据结构pglist_data、zone、page。">
+  <meta name="description" content="基于linux-4.15介绍linux内存管理中跟物理内存相关的三个数据结构pglist_data、zone、page。">
 <meta name="keywords" content="linux,memery">
 <meta property="og:type" content="article">
 <meta property="og:title" content="物理内存相关的三个数据结构">
 <meta property="og:url" content="https://songyoulin.github.io/2017/06/12/物理内存相关的三个数据结构pglist_data、zone、page/index.html">
 <meta property="og:site_name" content="SuperSong的博客">
-<meta property="og:description" content="来自msinglee基于linux-4.15介绍linux内存管理中跟物理内存相关的三个数据结构pglist_data、zone、page。">
+<meta property="og:description" content="基于linux-4.15介绍linux内存管理中跟物理内存相关的三个数据结构pglist_data、zone、page。">
 <meta property="og:locale" content="default">
-<meta property="og:updated_time" content="2018-05-02T01:58:56.552Z">
+<meta property="og:updated_time" content="2018-05-02T05:48:30.888Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="物理内存相关的三个数据结构">
-<meta name="twitter:description" content="来自msinglee基于linux-4.15介绍linux内存管理中跟物理内存相关的三个数据结构pglist_data、zone、page。">
+<meta name="twitter:description" content="基于linux-4.15介绍linux内存管理中跟物理内存相关的三个数据结构pglist_data、zone、page。">
   
     <link rel="alternative" href="/atom.xml" title="SuperSong的博客" type="application/atom+xml">
   
@@ -86,8 +86,6 @@
 				
 					<a class="github" target="_blank" href="https://github.com/songyoulin" title="github"><i class="icon-github"></i></a>
 		        
-					<a class="weibo" target="_blank" href="http://weibo.com/xiaojiuking" title="weibo"><i class="icon-weibo"></i></a>
-		        
 					<a class="mail" target="_blank" href="mailto:soon_syl@163.com" title="mail"><i class="icon-mail"></i></a>
 		        
 			</div>
@@ -126,8 +124,6 @@
 				<div class="social">
 					
 						<a class="github" target="_blank" href="https://github.com/songyoulin" title="github"><i class="icon-github"></i></a>
-			        
-						<a class="weibo" target="_blank" href="http://weibo.com/xiaojiuking" title="weibo"><i class="icon-weibo"></i></a>
 			        
 						<a class="mail" target="_blank" href="mailto:soon_syl@163.com" title="mail"><i class="icon-mail"></i></a>
 			        
@@ -176,7 +172,7 @@
     <div class="article-entry" itemprop="articleBody">
       
         <blockquote>
-<p>来自msinglee<br>基于<code>linux-4.15</code>介绍<code>linux</code>内存管理中跟物理内存相关的三个数据结构<code>pglist_data</code>、<code>zone</code>、<code>page</code>。</p>
+<p>基于<code>linux-4.15</code>介绍<code>linux</code>内存管理中跟物理内存相关的三个数据结构<code>pglist_data</code>、<code>zone</code>、<code>page</code>。</p>
 </blockquote>
 <a id="more"></a>
 <h1 id="I-内存节点pg-data-t"><a href="#I-内存节点pg-data-t" class="headerlink" title="I. 内存节点pg_data_t"></a>I. 内存节点<code>pg_data_t</code></h1><h2 id="一-内存模型"><a href="#一-内存模型" class="headerlink" title="一. 内存模型"></a>一. 内存模型</h2><p>内存模型有以下两种：</p>
@@ -580,7 +576,7 @@ struct page *mem_map;
       <i class="icon-circle-left"></i>
       <div class="article-nav-title">
         
-          基于`linux-4.15`介绍`buddy`原理，以及`buddy`主要的`api`的实现过程和原理
+          伙伴系统
         
       </div>
     </a>

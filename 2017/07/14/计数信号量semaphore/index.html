@@ -8,18 +8,18 @@
   <link rel="dns-prefetch" href="https://songyoulin.github.io">
   <title> linux同步和互斥 | SuperSong的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="来自msinglee">
+  <meta name="description" content="I. 计数信号量数据结构计数信号量数据结构semaphore定义如下： struct semaphore {     raw_spinlock_t   lock;     unsigned int     count;     struct list_head wait_list; }; lock：是一个spinlock，对count和wait_list的操作进行保护。count：是表示允许进入">
 <meta name="keywords" content="linux">
 <meta property="og:type" content="article">
 <meta property="og:title" content=" linux同步和互斥">
 <meta property="og:url" content="https://songyoulin.github.io/2017/07/14/计数信号量semaphore/index.html">
 <meta property="og:site_name" content="SuperSong的博客">
-<meta property="og:description" content="来自msinglee">
+<meta property="og:description" content="I. 计数信号量数据结构计数信号量数据结构semaphore定义如下： struct semaphore {     raw_spinlock_t   lock;     unsigned int     count;     struct list_head wait_list; }; lock：是一个spinlock，对count和wait_list的操作进行保护。count：是表示允许进入">
 <meta property="og:locale" content="default">
-<meta property="og:updated_time" content="2018-05-02T03:15:38.494Z">
+<meta property="og:updated_time" content="2018-05-02T05:50:29.995Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content=" linux同步和互斥">
-<meta name="twitter:description" content="来自msinglee">
+<meta name="twitter:description" content="I. 计数信号量数据结构计数信号量数据结构semaphore定义如下： struct semaphore {     raw_spinlock_t   lock;     unsigned int     count;     struct list_head wait_list; }; lock：是一个spinlock，对count和wait_list的操作进行保护。count：是表示允许进入">
   
     <link rel="alternative" href="/atom.xml" title="SuperSong的博客" type="application/atom+xml">
   
@@ -86,8 +86,6 @@
 				
 					<a class="github" target="_blank" href="https://github.com/songyoulin" title="github"><i class="icon-github"></i></a>
 		        
-					<a class="weibo" target="_blank" href="http://weibo.com/xiaojiuking" title="weibo"><i class="icon-weibo"></i></a>
-		        
 					<a class="mail" target="_blank" href="mailto:soon_syl@163.com" title="mail"><i class="icon-mail"></i></a>
 		        
 			</div>
@@ -126,8 +124,6 @@
 				<div class="social">
 					
 						<a class="github" target="_blank" href="https://github.com/songyoulin" title="github"><i class="icon-github"></i></a>
-			        
-						<a class="weibo" target="_blank" href="http://weibo.com/xiaojiuking" title="weibo"><i class="icon-weibo"></i></a>
 			        
 						<a class="mail" target="_blank" href="mailto:soon_syl@163.com" title="mail"><i class="icon-mail"></i></a>
 			        
@@ -175,9 +171,7 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <blockquote>
-<p>来自msinglee<br><a id="more"></a></p>
-</blockquote>
+        <a id="more"></a>
 <h1 id="I-计数信号量数据结构"><a href="#I-计数信号量数据结构" class="headerlink" title="I. 计数信号量数据结构"></a>I. 计数信号量数据结构</h1><p>计数信号量数据结构<code>semaphore</code>定义如下：</p>
 <pre><code>struct semaphore {
     raw_spinlock_t   lock;
@@ -562,7 +556,7 @@ static noinline int __sched __down_timeout(struct semaphore *sem, long timeout)
       <i class="icon-circle-left"></i>
       <div class="article-nav-title">
         
-          基于原子操作
+          原子操作
         
       </div>
     </a>

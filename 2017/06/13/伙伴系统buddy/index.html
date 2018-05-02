@@ -6,20 +6,20 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://songyoulin.github.io">
-  <title>基于`linux-4.15`介绍`buddy`原理，以及`buddy`主要的`api`的实现过程和原理 | SuperSong的博客</title>
+  <title>伙伴系统 | SuperSong的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="来自msinglee">
+  <meta name="description" content="基于linux-4.15介绍buddy原理，以及buddy主要的api的实现过程和原理">
 <meta name="keywords" content="linux,memery">
 <meta property="og:type" content="article">
-<meta property="og:title" content="基于`linux-4.15`介绍`buddy`原理，以及`buddy`主要的`api`的实现过程和原理">
+<meta property="og:title" content="伙伴系统">
 <meta property="og:url" content="https://songyoulin.github.io/2017/06/13/伙伴系统buddy/index.html">
 <meta property="og:site_name" content="SuperSong的博客">
-<meta property="og:description" content="来自msinglee">
+<meta property="og:description" content="基于linux-4.15介绍buddy原理，以及buddy主要的api的实现过程和原理">
 <meta property="og:locale" content="default">
-<meta property="og:updated_time" content="2018-05-02T02:01:14.508Z">
+<meta property="og:updated_time" content="2018-05-02T05:51:07.956Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="基于`linux-4.15`介绍`buddy`原理，以及`buddy`主要的`api`的实现过程和原理">
-<meta name="twitter:description" content="来自msinglee">
+<meta name="twitter:title" content="伙伴系统">
+<meta name="twitter:description" content="基于linux-4.15介绍buddy原理，以及buddy主要的api的实现过程和原理">
   
     <link rel="alternative" href="/atom.xml" title="SuperSong的博客" type="application/atom+xml">
   
@@ -86,8 +86,6 @@
 				
 					<a class="github" target="_blank" href="https://github.com/songyoulin" title="github"><i class="icon-github"></i></a>
 		        
-					<a class="weibo" target="_blank" href="http://weibo.com/xiaojiuking" title="weibo"><i class="icon-weibo"></i></a>
-		        
 					<a class="mail" target="_blank" href="mailto:soon_syl@163.com" title="mail"><i class="icon-mail"></i></a>
 		        
 			</div>
@@ -127,8 +125,6 @@
 					
 						<a class="github" target="_blank" href="https://github.com/songyoulin" title="github"><i class="icon-github"></i></a>
 			        
-						<a class="weibo" target="_blank" href="http://weibo.com/xiaojiuking" title="weibo"><i class="icon-weibo"></i></a>
-			        
 						<a class="mail" target="_blank" href="mailto:soon_syl@163.com" title="mail"><i class="icon-mail"></i></a>
 			        
 				</div>
@@ -162,7 +158,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      基于`linux-4.15`介绍`buddy`原理，以及`buddy`主要的`api`的实现过程和原理
+      伙伴系统
     </h1>
   
 
@@ -176,7 +172,7 @@
     <div class="article-entry" itemprop="articleBody">
       
         <blockquote>
-<p>来自msinglee<br><a id="more"></a></p>
+<p>基于<code>linux-4.15</code>介绍<code>buddy</code>原理，以及<code>buddy</code>主要的<code>api</code>的实现过程和原理<br><a id="more"></a></p>
 </blockquote>
 <h1 id="I-简述"><a href="#I-简述" class="headerlink" title="I. 简述"></a>I. 简述</h1><p><code>linux</code>内核用<code>buddy</code>来管理物理内存页。<code>buddy</code>是基于每一个<code>zone</code>进行管理的。每一个<code>zone</code>中有一个<code>free_area</code>数组来管理这个<code>zone</code>中的所有空闲页面。<code>struct free_area free_area[MAX_ORDER]</code>。<code>MAX_ORDER</code>的值一般是<code>11</code>，这个数字的用意是<code>buddy</code>把所有的物理页面按照<code>2</code>的<code>n</code>次幂来管理：<code>1</code>、 <code>2</code>、 <code>4</code>、 <code>8</code>、 <code>16</code>、 <code>32</code>、 <code>64</code>、 <code>128</code>、 <code>256</code>、 <code>512</code>、 <code>1024</code>。其最大值是<code>1024</code>即<code>2</code>的<code>MAX_ORDER - 1</code>次方。<code>buddy</code>的厉害之处在于，所有的正整数都可以用<code>2</code>的<code>n</code>次幂的多项式之和来表示。比如，假设有现在有<code>1000</code>个物理页面，我们就可以用<code>512</code> + <code>256</code> + <code>128</code> + <code>64</code> + <code>32</code> + <code>8</code>来表示。<code>buddy</code>的申请和回收可以用下面的例子来简单的描述：</p>
 <ol>
@@ -1049,11 +1045,11 @@ out:
   
 <nav id="article-nav">
   
-    <a href="/2017/06/15/互斥锁mutex/" id="article-nav-newer" class="article-nav-link-wrap">
+    <a href="/2017/07/13/自旋锁spinlock/" id="article-nav-newer" class="article-nav-link-wrap">
       <i class="icon-circle-left"></i>
       <div class="article-nav-title">
         
-          linux同步和互斥
+          自旋锁spinlock
         
       </div>
     </a>

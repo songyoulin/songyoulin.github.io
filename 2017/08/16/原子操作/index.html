@@ -6,20 +6,20 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://songyoulin.github.io">
-  <title>基于原子操作 | SuperSong的博客</title>
+  <title>原子操作 | SuperSong的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="来自msinglee">
+  <meta name="description" content="I.原子操作概念 原子操作指的是，保证一段指令在执行的过程中，不会被其他对这段指令的执行结果造成影响的其他指令打断。  划重点：不会被对这段指令的执行结果造成影响的其他指令打断。如果单独的讲，原子操作可不可以被其他指令打断，结果当然是肯定的。因为如果打断后，其他执行的执行不会影响到这个原子操作的执行结果，那么就没关系。 II. linux中32位atomic_t的定义和其操作一. atomic_">
 <meta name="keywords" content="linux">
 <meta property="og:type" content="article">
-<meta property="og:title" content="基于原子操作">
+<meta property="og:title" content="原子操作">
 <meta property="og:url" content="https://songyoulin.github.io/2017/08/16/原子操作/index.html">
 <meta property="og:site_name" content="SuperSong的博客">
-<meta property="og:description" content="来自msinglee">
+<meta property="og:description" content="I.原子操作概念 原子操作指的是，保证一段指令在执行的过程中，不会被其他对这段指令的执行结果造成影响的其他指令打断。  划重点：不会被对这段指令的执行结果造成影响的其他指令打断。如果单独的讲，原子操作可不可以被其他指令打断，结果当然是肯定的。因为如果打断后，其他执行的执行不会影响到这个原子操作的执行结果，那么就没关系。 II. linux中32位atomic_t的定义和其操作一. atomic_">
 <meta property="og:locale" content="default">
-<meta property="og:updated_time" content="2018-05-02T03:31:52.750Z">
+<meta property="og:updated_time" content="2018-05-02T05:48:01.594Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="基于原子操作">
-<meta name="twitter:description" content="来自msinglee">
+<meta name="twitter:title" content="原子操作">
+<meta name="twitter:description" content="I.原子操作概念 原子操作指的是，保证一段指令在执行的过程中，不会被其他对这段指令的执行结果造成影响的其他指令打断。  划重点：不会被对这段指令的执行结果造成影响的其他指令打断。如果单独的讲，原子操作可不可以被其他指令打断，结果当然是肯定的。因为如果打断后，其他执行的执行不会影响到这个原子操作的执行结果，那么就没关系。 II. linux中32位atomic_t的定义和其操作一. atomic_">
   
     <link rel="alternative" href="/atom.xml" title="SuperSong的博客" type="application/atom+xml">
   
@@ -86,8 +86,6 @@
 				
 					<a class="github" target="_blank" href="https://github.com/songyoulin" title="github"><i class="icon-github"></i></a>
 		        
-					<a class="weibo" target="_blank" href="http://weibo.com/xiaojiuking" title="weibo"><i class="icon-weibo"></i></a>
-		        
 					<a class="mail" target="_blank" href="mailto:soon_syl@163.com" title="mail"><i class="icon-mail"></i></a>
 		        
 			</div>
@@ -127,8 +125,6 @@
 					
 						<a class="github" target="_blank" href="https://github.com/songyoulin" title="github"><i class="icon-github"></i></a>
 			        
-						<a class="weibo" target="_blank" href="http://weibo.com/xiaojiuking" title="weibo"><i class="icon-weibo"></i></a>
-			        
 						<a class="mail" target="_blank" href="mailto:soon_syl@163.com" title="mail"><i class="icon-mail"></i></a>
 			        
 				</div>
@@ -162,7 +158,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      基于原子操作
+      原子操作
     </h1>
   
 
@@ -175,10 +171,7 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <blockquote>
-<p>来自msinglee</p>
-<a id="more"></a>
-</blockquote>
+        <a id="more"></a>
 <h1 id="I-原子操作概念"><a href="#I-原子操作概念" class="headerlink" title="I.原子操作概念"></a>I.原子操作概念</h1><blockquote>
 <p>原子操作指的是，保证一段指令在执行的过程中，不会被其他对这段指令的执行结果造成影响的其他指令打断。</p>
 </blockquote>
@@ -624,6 +617,15 @@ atmoic_xxx_release(...)
 
   
 <nav id="article-nav">
+  
+    <a href="/2017/08/17/互斥锁mutex/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          mutex原子操作
+        
+      </div>
+    </a>
   
   
     <a href="/2017/07/14/计数信号量semaphore/" id="article-nav-older" class="article-nav-link-wrap">
