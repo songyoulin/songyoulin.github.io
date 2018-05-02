@@ -6,20 +6,17 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://songyoulin.github.io">
-  <title>伙伴系统 | SuperSong的博客</title>
+  <title>memeory barrier内存屏障 | SuperSong的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="基于linux-4.15介绍buddy原理，以及buddy主要的api的实现过程和原理">
-<meta name="keywords" content="linux,memery">
+  <meta name="keywords" content="linux kernel,memeory,cache">
 <meta property="og:type" content="article">
-<meta property="og:title" content="伙伴系统">
-<meta property="og:url" content="https://songyoulin.github.io/2017/06/13/伙伴系统buddy/index.html">
+<meta property="og:title" content="memeory barrier内存屏障">
+<meta property="og:url" content="https://songyoulin.github.io/2018/02/12/memory_barrier/index.html">
 <meta property="og:site_name" content="SuperSong的博客">
-<meta property="og:description" content="基于linux-4.15介绍buddy原理，以及buddy主要的api的实现过程和原理">
 <meta property="og:locale" content="default">
-<meta property="og:updated_time" content="2018-05-02T06:01:14.529Z">
+<meta property="og:updated_time" content="2018-05-02T06:06:19.162Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="伙伴系统">
-<meta name="twitter:description" content="基于linux-4.15介绍buddy原理，以及buddy主要的api的实现过程和原理">
+<meta name="twitter:title" content="memeory barrier内存屏障">
   
     <link rel="alternative" href="/atom.xml" title="SuperSong的博客" type="application/atom+xml">
   
@@ -151,20 +148,20 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            <article id="post-伙伴系统buddy" class="article article-type-post " itemscope itemprop="blogPost">
+            <article id="post-memory_barrier" class="article article-type-post " itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <header class="article-header">
         
   
     <h1 class="article-title" itemprop="name">
-      伙伴系统
+      memeory barrier内存屏障
     </h1>
   
 
         
-        <a href="/2017/06/13/伙伴系统buddy/" class="archive-article-date">
-  	<time datetime="2017-06-13T01:45:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-06-13</time>
+        <a href="/2018/02/12/memory_barrier/" class="archive-article-date">
+  	<time datetime="2018-02-12T00:55:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-02-12</time>
 </a>
         
       </header>
@@ -172,763 +169,155 @@
     <div class="article-entry" itemprop="articleBody">
       
         <blockquote>
-<p>基于<code>linux-4.15</code>介绍<code>buddy</code>原理，以及<code>buddy</code>主要的<code>api</code>的实现过程和原理</p>
 </blockquote>
 <a id="more"></a>
-<h1 id="I-简述"><a href="#I-简述" class="headerlink" title="I. 简述"></a>I. 简述</h1><p><code>linux</code>内核用<code>buddy</code>来管理物理内存页。<code>buddy</code>是基于每一个<code>zone</code>进行管理的。每一个<code>zone</code>中有一个<code>free_area</code>数组来管理这个<code>zone</code>中的所有空闲页面。<code>struct free_area free_area[MAX_ORDER]</code>。<code>MAX_ORDER</code>的值一般是<code>11</code>，这个数字的用意是<code>buddy</code>把所有的物理页面按照<code>2</code>的<code>n</code>次幂来管理：<code>1</code>、 <code>2</code>、 <code>4</code>、 <code>8</code>、 <code>16</code>、 <code>32</code>、 <code>64</code>、 <code>128</code>、 <code>256</code>、 <code>512</code>、 <code>1024</code>。其最大值是<code>1024</code>即<code>2</code>的<code>MAX_ORDER - 1</code>次方。<code>buddy</code>的厉害之处在于，所有的正整数都可以用<code>2</code>的<code>n</code>次幂的多项式之和来表示。比如，假设有现在有<code>1000</code>个物理页面，我们就可以用<code>512</code> + <code>256</code> + <code>128</code> + <code>64</code> + <code>32</code> + <code>8</code>来表示。<code>buddy</code>的申请和回收可以用下面的例子来简单的描述：</p>
-<ol>
-<li><p>假设空闲内存现在只有一个<code>16</code>页大小的<code>free_area</code>。</p>
-<pre><code>+------------------------------------------+
-|                    16                    |
-+------------------------------------------+
-</code></pre></li>
-<li><p><code>A</code>想要申请<code>4</code>页内存。把<code>16</code>分出去<code>4</code>给他，剩下<code>12</code>。但<code>12</code>不是<code>2</code>的<code>n</code>次幂。<code>12</code>被分为<code>8</code> + <code>4</code>（其中的<code>----4----</code>为已分配出去的<code>4</code>页）。</p>
-<pre><code>+------------------------------------------+
-|          8         |     4     |----4----|
-+------------------------------------------+
-</code></pre></li>
-<li><p><code>B</code>想要<code>2</code>页内存。从上面的<code>4</code>页中分<code>2</code>页给他。剩余：<code>8</code> + <code>2</code>。</p>
-<pre><code>+------------------------------------------+
-|          8         |  2  |--2--|----4----|
-+------------------------------------------+
-</code></pre></li>
-<li><p><code>C</code>想要<code>4</code>页内存。从<code>8</code>中再分<code>4</code>出来，剩余：<code>4</code> + <code>2</code>。</p>
-<pre><code>+------------------------------------------+
-|    4     |----4----|  2  |--2--|----4----|
-+------------------------------------------+
-</code></pre></li>
-<li><p>过了一段时间，<code>A</code>把他申请的<code>4</code>页内存还了回来。剩余：<code>4</code> + <code>4</code> + <code>2</code>。</p>
-<pre><code>+------------------------------------------+
-|    4     |----4----|  2  |--2--|    4    |
-+------------------------------------------+
-</code></pre></li>
-<li><p><code>C</code>把它的<code>4</code>页也还了回来。剩余<code>4</code> + <code>4</code> + <code>4</code> + <code>2</code>。</p>
-<pre><code>+------------------------------------------+
-|    4     |    4    |  2  |--2--|    4    |
-+------------------------------------------+
-</code></pre><p> 但是发现他换回来<code>4</code>页左边的空闲的<code>4</code>页也是刚好可以合并的。就合并成了<code>8</code>。现在剩余：<code>8</code> + <code>4</code> + <code>2</code></p>
-<pre><code>+------------------------------------------+
-|          8         |  2  |--2--|    4    |
-+------------------------------------------+
-</code></pre></li>
-<li><p><code>B</code>把它的<code>2</code>页也还了回来。</p>
-<pre><code>+------------------------------------------+
-|          8         |  2  |  2  |    4    |
-+------------------------------------------+
-</code></pre><p> 发现可以和左边空闲的<code>2</code>可以合并成<code>4</code>。</p>
-<pre><code>+------------------------------------------+
-|          8         |     4     |    4    |
-+------------------------------------------+
-</code></pre><p> 两个<code>4</code>刚好可以合并成<code>8</code>。</p>
-<pre><code>+------------------------------------------+
-|          8         |           8         |
-+------------------------------------------+
-</code></pre><p> 最终合并成<code>16</code>。</p>
-<pre><code>+------------------------------------------+
-|                     16                   |
-+------------------------------------------+
-</code></pre></li>
-</ol>
-<p>实际情况要比上述的复杂，但是通过上述的例子可以对整个过程有一个简单的理解。</p>
-<h1 id="II-buddy申请页面"><a href="#II-buddy申请页面" class="headerlink" title="II. buddy申请页面"></a>II. <code>buddy</code>申请页面</h1><h2 id="一-申请页面的主要api"><a href="#一-申请页面的主要api" class="headerlink" title="一. 申请页面的主要api"></a>一. 申请页面的主要<code>api</code></h2><table>
-<thead>
-<tr>
-<th style="text-align:center">申请页面api</th>
-<th style="text-align:center">说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>alloc_page</code></td>
-<td style="text-align:center">返回一个<code>struct page</code></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>alloc_pages</code></td>
-<td style="text-align:center">返回起始页的<code>struct page</code></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>get_zeroed_page</code></td>
-<td style="text-align:center">返回一个<code>struct page</code>，此页对应的内存填充0</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>__get_free_page</code></td>
-<td style="text-align:center">返回一个内存页的虚拟地址</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>__get_free_pages</code></td>
-<td style="text-align:center">返回多个内存页的虚拟地址</td>
-</tr>
-</tbody>
-</table>
-<p>申请页面的<code>api</code>实现如下，可以看到这些函数最终都调用<code>alloc_pages_node</code>。</p>
-<pre><code>#define alloc_page(gfp_mask) alloc_pages(gfp_mask, 0)
+<h2 id="cache-一致性协议-MESI"><a href="#cache-一致性协议-MESI" class="headerlink" title="cache 一致性协议 MESI"></a>cache 一致性协议 MESI</h2><p>在单核的cache中，每一个cache line有两个状态：dirty和valid。它描述了cache和memory之间的数据关系，而在多核处理器中，会共享一些其他的数据信息，MESI就包含了共享态的描述。在MESI协议中，每个cache的cache控制器不仅知道自己的读写操作，而且也监听其他cache的读写。</p>
+<blockquote>
+<p>M(Modified)：这行数据有效，数据被修改了，和内存中的数据不一致，数据只存在于本Cache中。<br>E(Exclusive)：这行数据有效，数据和内存中的数据一致，数据只存在于本Cache中。<br>S(Shared)：这行数据有效，数据和内存中的数据一致，数据存在于很多Cache中。<br>I(Invalid)：这行数据是空的换句话说，它没有保存任何有效数据。当新数据进入缓存时，它被放置到一个处于“invalid”状态的缓存行。</p>
+</blockquote>
+<h2 id="乱序执行"><a href="#乱序执行" class="headerlink" title="乱序执行"></a>乱序执行</h2><p>编译器在编译的时候、cpu在执行代码的时候都有可能将原来的语句乱序排列或者执行。乱序执行的目的是为了提高执行效率，编译器和cpu只保证以下原则。</p>
+<blockquote>
+<p>不可修改单线程程序的行为</p>
+</blockquote>
+<p>这里的单线程可能不包含中断，也就是说，中断里执行的语句在行为上也算是一个线程。在多线程编程的时候，编译器和cpu是不保证程序的行为的。</p>
+<h4 id="Ⅰ-编译器乱序"><a href="#Ⅰ-编译器乱序" class="headerlink" title="Ⅰ. 编译器乱序"></a>Ⅰ. 编译器乱序</h4><h6 id="1-编译器乱序的例子1："><a href="#1-编译器乱序的例子1：" class="headerlink" title="1. 编译器乱序的例子1："></a>1. 编译器乱序的例子1：</h6><p>有如下代码 reorder.c：</p>
+<pre><code>int a = 0, b = 0;
 
-#define alloc_pages(gfp_mask, order) \
-            alloc_pages_node(numa_node_id(), gfp_mask, order)
-
-#define __get_free_page(gfp_mask) \
-            __get_free_pages((gfp_mask), 0)
-
-unsigned long get_zeroed_page(gfp_t gfp_mask) 
+void reorder()
 {
-    return __get_free_pages(gfp_mask | __GFP_ZERO, 0);
-}   
-
-unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order)
-{       
-    struct page *page;
-
-    VM_BUG_ON((gfp_mask &amp; __GFP_HIGHMEM) != 0);
-
-    page = alloc_pages(gfp_mask, order);
-    if (!page)
-        return 0;
-
-    return (unsigned long) page_address(page);
+    a = b + 100;
+    b = 0;
 }
-</code></pre><p>再来看<code>alloc_pages_node</code>:</p>
-<pre><code>[include/linux/gfp.h]
+</code></pre><p>如果用<code>gcc -S reorder.c</code>编译出来的reorder.s文件为：</p>
+<pre><code>...
+movl    b(%rip), %eax
+addl    $100, %eax
+movl    %eax, a(%rip)
+movl    $0, b(%rip)
+...
+</code></pre><p>如果用<code>gcc -S reorder.c -O2</code>编译出来的reorder.s文件为：</p>
+<pre><code>...
+movl    b(%rip), %eax
+movl    $0, b(%rip)
+addl    $100, %eax
+movl    %eax, a(%rip)
+...
+</code></pre><p>可以看到加了<code>-O2</code>选项之后编译器把<code>movl $0, b(%rip)</code>这句话的顺序调整了一下，放在了<code>movl b(%rip), %eax</code>之后，这样的结果是，<code>b</code>的值先变成0，然后<code>a</code>的值才变成100，编译器打乱了<code>a</code>和<code>b</code>赋值的顺序，这就是乱序执行。编译器为什么会这么做呢？因为<code>CPU</code>在执行两条相邻的语句的时候，发生<code>cache miss</code>的概率要比在执行不相邻的语句的时候的概率小。在执行第一条语句<code>movl b(%rip), %eax</code>时，CPU要把<code>b</code>这个变量从内存里读到<code>cache</code>里，由于<code>cache</code>的大小有限，随着<code>CPU</code>执行的语句越来越多，<code>cache</code>里存放的变量也越来越多，最终变量<code>b</code>会从<code>cache</code>里被移除，这样子下次再访问变量<code>b</code>的时候，<code>CPU</code>必须重新把内存里的变量<code>b</code>读回到<code>cache</code>里，这样就从内存里读了两次变量<code>b</code>的值，因为访问<code>cache</code>的速度远大于访问内存的速度，频繁的访问内存造成的结果就是性能下降。</p>
+<h6 id="2-编译器乱序的例子2："><a href="#2-编译器乱序的例子2：" class="headerlink" title="2. 编译器乱序的例子2："></a>2. 编译器乱序的例子2：</h6><pre><code>int g_flags = 0x43;
 
-static inline struct page *alloc_pages_node(int nid, gfp_t gfp_mask,
-                                                unsigned int order)
+int main(void)
 {
-    if (nid == NUMA_NO_NODE)
-        nid = numa_mem_id();
+    int a = 0;
 
-    return __alloc_pages_node(nid, gfp_mask, order);
-}
-
-static inline struct page *
-__alloc_pages(gfp_t gfp_mask, unsigned int order, int preferred_nid)
-{
-    return __alloc_pages_nodemask(gfp_mask, order, preferred_nid, );
-}
-
-static inline struct page *
-__alloc_pages_node(int nid, gfp_t gfp_mask, unsigned int order)
-{
-        VM_BUG_ON(nid &lt; 0 || nid &gt;= MAX_NUMNODES);
-        VM_WARN_ON(!node_online(nid));
-
-        return __alloc_pages(gfp_mask, order, nid);
-}
-</code></pre><p>最终调用的是<code>__alloc_pages_nodemask</code>，这个函数<code>buddy</code>分配页面的核心函数。</p>
-<p>其中的<code>order</code>决定了需要分配多少内存页，<code>preferred_nid</code>确定了是哪个<code>node</code>，在<code>UMA</code>中只有一个。</p>
-<h2 id="二-确定zone以及分配器行为的gfp-mask"><a href="#二-确定zone以及分配器行为的gfp-mask" class="headerlink" title="二. 确定zone以及分配器行为的gfp_mask"></a>二. 确定<code>zone</code>以及分配器行为的<code>gfp_mask</code></h2><p>其中入参<code>gfp_mask</code>通常如下：</p>
-<pre><code>/* 高优先级，不能睡眠(中断处理程序、下半部、自旋锁等)，但是可以唤醒kswapd */
-#define GFP_ATOMIC    (__GFP_HIGH|__GFP_ATOMIC|__GFP_KSWAPD_RECLAIM)
-
-/* 可以睡眠，可以唤醒kswapd或者直接内存回收，一般只给内核用，
- * 从ZONE_NORMAL及以下区域分配内存 */
-#define GFP_KERNEL    (__GFP_RECLAIM | __GFP_IO | __GFP_FS)
-
-/* 和GFP_KERNEL一样，但是会被kmemcg记录 */
-#define GFP_KERNEL_ACCOUNT    (GFP_KERNEL | __GFP_ACCOUNT)
-
-/* 不会发起直接的内存回收，经常被用于物理IO的使用，或者任何文件系统的回调函数 */
-#define GFP_NOWAIT    (__GFP_KSWAPD_RECLAIM)
-
-/* 下面的两个NOIO和NOFS可能会引起阻塞，但他们会避免执行其他的操作，
- * NOIO分配决不会启动任何磁盘IO来帮助满足请求。而NOFS可能会启动磁盘IO，
- * 但是他不会启动文件系统的IO。他们分别用于某些低级块IO或文件系统的代码中。
- * 比如，如果文件系统代码中需要分配内存，但是没有使用NOFS，这种分配会可能
- * 引起更多的文件系统的操作，这样持续下去像是一个死循环。这样的代码在调用
- * 内存分配函数的时候，必须要保证分配器不能在调用这些代码的本身。内核使用
- * 这两个标志的地方是非常少的。 */
-#define GFP_NOIO     (__GFP_RECLAIM)
-#define GFP_NOFS     (__GFP_RECLAIM | __GFP_IO)
-
-/* 为用户空间分配内存，同时经常被硬件或者内核直接访问。通常用于硬件的申请
- * 一个Buffers，然后把这个buffers mmap 到用户空间而且硬件必须是DMA。
- * 比如显卡驱动。*/
-#define GFP_USER     (__GFP_RECLAIM | __GFP_IO | \
-                     __GFP_FS | __GFP_HARDWALL)
-
-/* 在ZONE_DMA分配内存 */
-#define GFP_DMA      __GFP_DMA
-
-/* 在ZONE_DMA32分配内存，32bit的物理地址范围内 */
-#define GFP_DMA32    __GFP_DMA32
-
-/* 给用户空间，并且是从ZONE_HIGHMEN开始分配，并且不能移动，内核也不会
- * 直接访问他 */
-#define GFP_HIGHUSER    (GFP_USER | __GFP_HIGHMEM)
-
-/* 给用户空间，并且是从ZONE_HIGHMEN开始分配，可以移动，内核一般不会
- * 直接访问他，但是当内核需要访问他的时候可以通过kmap来访问，这些页面
- * 肯能在内存回收或者内存规整(压紧)的时候移动他，通常，在LRU中，内存页的申请
- * 通常也使用GFP_HIGHUSER_MOVABLE标志 */
-#define GFP_HIGHUSER_MOVABLE    (GFP_HIGHUSER | __GFP_MOVABLE)
-
-#define GFP_TRANSHUGE_LIGHT   ((GFP_HIGHUSER_MOVABLE | __GFP_COMP | \
-                                __GFP_NOMEMALLOC | __GFP_NOWARN) &amp; \
-                                ~__GFP_RECLAIM)
-
-#define GFP_TRANSHUGE   (GFP_TRANSHUGE_LIGHT | __GFP_DIRECT_RECLAIM)
-</code></pre><p>可以看到，每一个<code>GFP_XXX</code>都是由<code>__GFP_XXX</code>组成的，而<code>__GFP_XXX</code>可以分为两类，一个是<code>zone modifiers</code>，一个是<code>action modifiers</code>。<code>zone modifers</code>可以决定分配的内存从哪个<code>zone</code>分配，<code>action modifiers</code>可以决定分配器的行为。</p>
-<p><code>zone modifiers</code>如下：</p>
-<pre><code>/* 从（只能在）ZONE_DMA开始 */
-#define __GFP_DMA       ((__force gfp_t)___GFP_DMA)
-/* 从ZONE_HIGHMEM开始 */
-#define __GFP_HIGHMEM   ((__force gfp_t)___GFP_HIGHMEM)
-/* 从ZONE_DMA32开始 */
-#define __GFP_DMA32     ((__force gfp_t)___GFP_DMA32)
-/* ZONE_MOVEABLE */
-#define __GFP_MOVABLE   ((__force gfp_t)___GFP_MOVABLE)
-
-/* zone相关的掩码 */
-
-#define GFP_ZONEMASK    (__GFP_DMA|__GFP_HIGHMEM|__GFP_DMA32|__GFP_MOVABLE)
-</code></pre><p><code>action modifiers</code>如下：</p>
-<pre><code>/* 分配器可以发起内存回收 */
-#define __GFP_RECLAIMABLE       ((__force gfp_t)___GFP_RECLAIMABLE)
-
-/* 可写 */
-#define __GFP_WRITE             ((__force gfp_t)___GFP_WRITE)
-
-/* 只在NUMA系统上有意义 */
-#define __GFP_HARDWALL          ((__force gfp_t)___GFP_HARDWALL)
-/* 下面两个跟node相关 */
-#define __GFP_THISNODE          ((__force gfp_t)___GFP_THISNODE)
-#define __GFP_ACCOUNT           ((__force gfp_t)___GFP_ACCOUNT)
-
-
-
-
-/* 内存不够调用者不直接回收内存，不睡眠，经常在中断处理程序、
- * 软终端、tasklet中使用，经常和__GFP_HIGH一起使用，因为不能睡眠，
- * 不能发起内存回收，所以分配成功的概率会降低，但是在有些不能睡眠的
- * 地方只能使用他 */
-#define __GFP_ATOMIC            ((__force gfp_t)___GFP_ATOMIC)
-
-/* 高优先级，对应ALLOC_HIGH，可以降低水位要求，变成1/2 */
-#define __GFP_HIGH              ((__force gfp_t)___GFP_HIGH)
-
-/* 允许访问所有内存（emergency reserves），调用者必须确保马上就会释放更多
- * 的内存出来，比如进程退出的时候，或者swap的时候，调用者同时必须和VM或者MM
- * 是密切相关的 */
-#define __GFP_MEMALLOC          ((__force gfp_t)___GFP_MEMALLOC)
-
-/* 不允许访问紧急内存，如果__GFP_MEMALLOC也存在，忽略__GFP_MEMALLOC */
-#define __GFP_NOMEMALLOC        ((__force gfp_t)___GFP_NOMEMALLOC)
-
-
-
-
-
-/* 分配器可以启动磁盘IO */
-#define __GFP_IO                ((__force gfp_t)___GFP_IO)
-
-/* 分配器可以启用文件系统IO */
-#define __GFP_FS                ((__force gfp_t)___GFP_FS)
-
-/* 分配器在内存不够的时候可能直接做内存回收 */
-#define __GFP_DIRECT_RECLAIM    ((__force gfp_t)___GFP_DIRECT_RECLAIM)
-
-/* 分配器在内存不够用的时（low水位）可能唤醒kswapd线程去回收内存 */
-#define __GFP_KSWAPD_RECLAIM    ((__force gfp_t)___GFP_KSWAPD_RECLAIM)
-#define __GFP_RECLAIM           ((__force gfp_t)(___GFP_DIRECT_RECLAIM|___GFP_KSWAPD_RECLAIM))
-
-/* 分配失败时，会等待其他的进程释放内存或者内存规整（压紧）和kswapd，但重试的次数任然有限制，
- * 虽然这个选项不会直接导致OOM killer，但是如果分配失败了，那就说明系统离OOM不远了。
- * 如果分配失败，并且调用者有能力去释放一下不是太紧要的内存，那么对整个系统是有益的。
- */
-#define __GFP_RETRY_MAYFAIL     ((__force gfp_t)___GFP_RETRY_MAYFAIL)
-
-/* 一直尝试，直到成功，适用于调用者不能处理失败的情况。这个选项是不推荐使用的 */
-#define __GFP_NOFAIL            ((__force gfp_t)___GFP_NOFAIL)
-
-/* 将尝试只有非常轻量级的内存直接回收，以获得内存短缺时的一些内存（因此可以睡眠）。
- * 它将避免像OOM杀手那样的破坏性行为。 调用者必须处理内存短缺时很有可能发生的问题。
- * 该标志适用于很容易处理分配失败的情形 */
-#define __GFP_NORETRY           ((__force gfp_t)___GFP_NORETRY)
-
-
-
-
-/* 调用者不会在近期使用这个页面，可能将返回一个cache-cold页面 */
-#define __GFP_COLD              ((__force gfp_t)___GFP_COLD)
-
-/* 分配失败时不打印失败警告 */
-#define __GFP_NOWARN            ((__force gfp_t)___GFP_NOWARN)
-
-#define __GFP_COMP              ((__force gfp_t)___GFP_COMP)
-
-/* 返回一个全为0的页面 */
-#define __GFP_ZERO              ((__force gfp_t)___GFP_ZERO)
-</code></pre><p>可以通过<code>gfp_mask</code>来计算出要分配的内存处于哪个<code>zone</code>，什么样的迁移类型，分配器会有什么样的行为。</p>
-<p><code>gfp_mask</code>算出迁移类型可以通过<code>gfpflags_to_migratetype</code>来转换：</p>
-<pre><code>#define ___GFP_MOVABLE          0x08u
-#define ___GFP_RECLAIMABLE      0x10u
-
-#define GFP_MOVABLE_MASK (__GFP_RECLAIMABLE|__GFP_MOVABLE)
-#define GFP_MOVABLE_SHIFT 3
-
-enum migratetype {
-        MIGRATE_UNMOVABLE,   //不可迁移
-        MIGRATE_MOVABLE,     //可迁移
-        MIGRATE_RECLAIMABLE, //可被回收
-        MIGRATE_PCPTYPES,    //跟per_cpu_pageset有关的迁移类型的个数
-        MIGRATE_HIGHATOMIC = MIGRATE_PCPTYPES,
-}
-
-static inline int gfpflags_to_migratetype(const gfp_t gfp_flags)
-{
-    if (unlikely(page_group_by_mobility_disabled))
-        return MIGRATE_UNMOVABLE;
-
-    /* Group based on mobility */
-    return (gfp_flags &amp; GFP_MOVABLE_MASK) &gt;&gt; GFP_MOVABLE_SHIFT;
-}        
-</code></pre><p>所以，<code>___GFP_MOVABLE</code>对应的是<code>MIGRATE_MOVABLE</code>，而<code>GFP_HIGHUSER_MOVABLE</code>包含<code>___GFP_MOVABLE</code>，<code>___GFP_RECLAIMABLE</code>对应的是<code>MIGRATE_RECLAIMABLE</code>，<code>___GFP_RECLAIMABLE</code>常用于<code>slab</code>中。而其他其他的<code>gfp_mask</code>都对应<code>MIGRATE_UNMOVABLE</code>。</p>
-<h2 id="三-alloc-pages-nodemask函数的主要流程"><a href="#三-alloc-pages-nodemask函数的主要流程" class="headerlink" title="三. __alloc_pages_nodemask函数的主要流程"></a>三. <code>__alloc_pages_nodemask</code>函数的主要流程</h2><p>先说一下<code>get_page_from_freelist</code>函数，这个函数是直接扫描<code>zone</code>是否有足够的水位，如果水位足够的话，直接尝试内存分配，是一个快速的路径来分配内存，其定义如下：</p>
-<pre><code>static struct page *
-get_page_from_freelist(gfp_t gfp_mask, unsigned int order, \
-            int alloc_flags, const struct alloc_context *ac);
-</code></pre><p>其中的<code>alloc_flags</code>可以为如下值：</p>
-<pre><code>/* 不同的水位 */
-#define ALLOC_WMARK_MIN         WMARK_MIN
-#define ALLOC_WMARK_LOW         WMARK_LOW
-#define ALLOC_WMARK_HIGH        WMARK_HIGH
-#define ALLOC_NO_WATERMARKS     0x04
-/* 水位掩码 */
-#define ALLOC_WMARK_MASK        (ALLOC_NO_WATERMARKS-1)
-
-#ifdef CONFIG_MMU
-/* 可以在OOM的时候可以申请，水位放宽为1/2 */
-#define ALLOC_OOM               0x08
-#else
-#define ALLOC_OOM               ALLOC_NO_WATERMARKS
-#endif
-
-/* 通知伙伴系统放宽检查限制，把水位乘以 3/4，然后可以用紧急内存,
- * 紧急内存的迁移类型为MIGRATE_HIGHATOMIC，在能否使用预留内存
- * 取决于gfp_mask或者进程所处的状态，如果gfp_mask是__GFP_ATOMIC
- * 并且没有设置__GFP_NOMEMALLOC的话，或者有__GFP_NOFAIL，
- * 或者进程是实时进程(由prio决定)且不在中断中。
- * (rt_task(current) &amp;&amp; !in_interrupt()) */
-#define ALLOC_HARDER            0x10
-/* 比HARDER更紧急的分配请求，进一步放宽限制，1/2 */
-#define ALLOC_HIGH              0x20
-#define ALLOC_CPUSET            0x40
-/* 允许在CMA区域分配 */
-#define ALLOC_CMA               0x80
-</code></pre><p><code>__alloc_pages_nodemask</code>函数的主要流程如：</p>
-<pre><code>__alloc_pages_nodemask()
-|
-|        /* 通过 gfp_mask 来寻找从哪个zone开始查找空余内存
-|         * 以及设定alloc_context中的成员为申请页面准备信息。
-|         * 其中包括可否直接做内存回收，可否唤醒kswapd等，
-|         * 设置水位为min */
-+---+---&gt; prepare_alloc_pages(); 和 finalise_ac();
-    |
-    |
-    |    /* 快速的分配路径 */
-    +---&gt; get_page_from_freelist();
-    |   |
-    |   |         /* 从某个zone开始，查找所有的zone */
-    |   +---+---&gt; for_next_zone_zonelist_nodemask();
-    |       |
-    |       |    /* 计算watermark，看是否低于min水位 */
-    |       |---&gt; zone_watermark_fast();
-    |       |
-    |       |    /* 如果低于Min水位，判断标志是否可以做直接的内存回收
-    |       |     * 即__GFP_DIRECT_RECLAIM，如果可以直接做内存回收
-    |       |     * 回收内存 */
-    |       |---&gt; node_reclaim();
-    |       |    
-    |       |    /* 是否回收超过了水位，没超过的继续回收 */
-    |       |---&gt; zone_watermark_ok();
-    |       |
-    |       |    /* 如果在水位OK，尝试在这个zone分配内存 */
-    |       +---&gt; rmqueue();
-    |       |
-    |       |    /* 如果分配成功，并且有ALLOC_HARDER，
-    |       |     * 把这些page的迁移类型设置为MIGRATE_HIGHATOMIC，
-    |       |     * 即紧急预留内存，但是一个zone的紧急预留内存不能超过
-    |       |     * 一个数值 */
-    |       +---&gt; reserve_highatomic_pageblock()
-    |
-    |
-    |     /* 如果快速路径没有分配到内存
-    |      * 进行这个可能会很耗时的调用 */
-    +---&gt; __alloc_pages_slowpath();
-        |
-        |       /* 快速路径的时候，alloc_flags是ALLOC_WMARK_LOW，
-        |        * 现在根据gfp_mask重新得出alloc_flags，可能会降低水位，
-        |        * 或者加上ALLOC_CMA等 */
-        +--+---&gt; gfp_to_alloc_flags();
-           |
-           |    /* 如果设置了可以唤醒KSWAPD，__GFP_KSWAPD_RECLAIM，
-           |     * 那么就唤醒KSWAPD */
-           +---&gt; wake_all_kswapds();
-           |
-           |    /* 重新设置了alloc_flags之后，在进行一次快速分配
-           |     * 这时候的水位监测会宽松一点，如果还不行，继续向下 */
-           +---&gt; get_page_from_freelist();
-           |
-           |    /* 如果可以直接内存回收；并且迁移类型不是MIGRATE_MOVABLE，
-           |     * 即不能用CMA里的内存或者是costly_order(order &gt; 3)；
-           |     * 并且不允许使用紧急内存的话。那么先进行一次内存规整（压紧）
-           |     * (memory compaction)，然后再尝试是否可以分配，
-           |     * 如果还不行，继续向下 */
-           |---&gt; if(can_direct_reclaim &amp;&amp;
-           |           (costly_order || (order &gt; 0 \
-           |           &amp;&amp; ac-&gt;migratetype != MIGRATE_MOVABLE)) \
-           |           &amp;&amp; !gfp_pfmemalloc_allowed(gfp_mask))
-           |         __alloc_pages_direct_compact();
-           |
-           |    /* 进入一个循环，这个循环是根据gfp_mask来决定循环的次数的，
-           |     * 这个时候已经开启了后台内存规整（压紧） */
-           +---&gt; retry:
-               |
-               |        /* 如果设置了可以唤醒KSWAPD，
-               |         * 即设置了__GFP_KSWAPD_RECLAIM标志，
-               |         * 那么就唤醒KSWAPD */
-               +---+---&gt; wake_all_kswapds();
-                   |
-                   |    /* 重新计算alloc_flags，可能会进一步降低水位标准
-                   |     * 比如忽略水位，ALLOC_NO_WATERMARKS；或者可能
-                   |     * 加上ALLOC_OOM */
-                   +---&gt; __gfp_pfmemalloc_flags();
-                   |
-                   |    /* 再次尝试快速分配，这时候水位标准更低，
-                   |     * 如果还不行，继续向下 */
-                   |---&gt; get_page_from_freelist();
-                   |
-                   |    /* 判断是否可以直接做内存回收__GFP_DIRECT_RECLAIM，
-                   |     * 若果不可以就返回失败
-                   |---&gt; if (!can_direct_reclaim)  goto nopage; 
-                   |
-                   |    /* 直接的内存回收并尝试分配，如果不行，向下*/
-                   |---&gt; __alloc_pages_direct_reclaim();
-                   |
-                   |    /* 直接内存规整（压紧），并尝试再次分配，
-                   |     * 如果不行，继续向下 */
-                   |---&gt; __alloc_pages_direct_compact();
-                   |
-                   |    /* 根据__GFP_NORETRY、__GFP_RETRY_MAYFAIL等标志
-                   |     * 判断是否要重试几次，如果不重试的话，就返回失败，
-                   |     * 如果重试的话，返回retry标号，继续尝试。
-                   |---&gt; if(should_reclaim_retry()) goto retry;
-                   |     if(should_compact_retr()) goto retry;
-                   |
-                   |    /* 还是不行，尝试OOM Killer开始杀进程 */
-                   +---&gt; __alloc_pages_may_oom();
-</code></pre><p>接下来看<code>rmqueue</code>函数：</p>
-<pre><code>rmqueue()
-|
-|
-|        /* 如果order等于0，即分配1页，那么就从per_cpu维护的
-|         * pagelist中获取一页 */
-+---+---&gt; if(likely(order == 0)) page = rmqueue_pcplist();
-    |
-    |    /* 如果不是1页，看看是包含ALLOC_HARDER */
-    +---&gt; if(alloc_flags &amp; ALLOC_HARDER)
-        |
-        |        /* 如果包含ALLOC_HARDER
-                  * 迁移类型入参为MIGRATE_HIGHATOMIC，
-                  * 即先从这个free_area中查找内存 */
-        +---+---&gt; __rmqueue_smallest(zone, order, MIGRATE_HIGHATOMIC);
-            |
-            |    /* 如果不包含，或者__rmqueue_smallest分配失败 */
-            +---&gt; __rmqueue();
-                   |
-                   |    /* 尝试调用__rmqueue_smallest，这时候的迁移类型
-                   |     * 是gfp_mask通过gfpflags_to_migratetype计算
-                   |     * 出来的。如果失败，继续向下 */
-                   +---&gt; __rmqueue_smallest();
-                   |
-                   |    /* 判断是否包含MIGRATE_MOVABLE(这个经常被
-                   |     * GFP_HIGHUSER_MOVABLE包含，应用层的内存分配),
-                   |     * 在尝试在CMA链表里寻找内存，不行向下继续 */
-                   +---&gt; __rmqueue_smallest(zone, order, MIGRATE_CMA);
-                   |
-                   |
-                   |    /* 根据 fallbacks 数据去查询这个迁移类型里没有空闲页面时，
-                   |     * 将会跑到下一个迁移类型中进行分配 */
-                   +---&gt; __rmqueue_fallback();
-</code></pre><p><code>__rmqueue_smallest</code>的函数实现如下:</p>
-<pre><code>[mm/page_alloc.c __rmqueue_smallest 函数]
-
-static inline
-struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
-                                                int migratetype)
-{
-    unsigned int current_order;
-    struct free_area *area;
-    struct page *page;
-
-    /* 从最小的order遍历到最大的order */
-    for (current_order = order; current_order &lt; MAX_ORDER; ++current_order) {
-        area = &amp;(zone-&gt;free_area[current_order]);
-        /* 从相应的迁移类型的列表上去寻找 */
-        page = list_first_entry_or_null(&amp;area-&gt;free_list[migratetype],
-                                                struct page, lru);
-        if (!page)
-            continue;
-        list_del(&amp;page-&gt;lru);
-        /* 从这个order上移除这些个page */
-        rmv_page_order(page);
-        area-&gt;nr_free--;
-        /* 核心算法 */
-        expand(zone, page, order, current_order, area, migratetype);
-        /* 设置这些页表的类型 */
-        set_pcppage_migratetype(page, migratetype);
-        return page;
-    }
-
-    return NULL;
-}
-</code></pre><p><code>expand</code>函数的实现如下：</p>
-<pre><code>[mm/page_alloc.c expand 函数]
-
-static inline void expand(struct zone *zone, struct page *page,
-        int low, int high, struct free_area *area,
-        int migratetype)
-{
-    unsigned long size = 1 &lt;&lt; high;
-
-    while (high &gt; low) {
-        /* 寻找合适的order */
-        area--;
-        high--;
-        size &gt;&gt;= 1;
-        VM_BUG_ON_PAGE(bad_range(zone, &amp;page[size]), &amp;page[size]);
-
-        if (set_page_guard(zone, &amp;page[size], high, migratetype))
-            continue;
-
-        /* 寻找到合适的order的话，把pages插入到这个order的free_area里 */
-        list_add(&amp;page[size].lru, &amp;area-&gt;free_list[migratetype]);
-        area-&gt;nr_free++;
-        set_page_order(&amp;page[size], high);
-    }
-}
-</code></pre><p>分配好的页面还需要调用<code>check_new_page</code> -&gt; <code>check_new_page_bad</code>检查这个页面，最后才能分配出去。刚分配的<code>struct page</code>页面中的成员有如下内容：</p>
-<ol>
-<li><code>_mapcount</code> 为 <code>0</code>。</li>
-<li><code>mapping</code> 为 <code>NULL</code>。</li>
-<li><code>__alloc_pages_nodemask</code>函数过后的<code>_refcount</code>为0，但是后面还要调用 <code>set_page_refcounted</code> -&gt; <code>set_page_count(page, 1)</code>将<code>_refcount</code>设置为1。</li>
-</ol>
-<h1 id="III-buddy释放页面"><a href="#III-buddy释放页面" class="headerlink" title="III. buddy释放页面"></a>III. <code>buddy</code>释放页面</h1><table>
-<thead>
-<tr>
-<th style="text-align:center">释放页面api</th>
-<th style="text-align:center">说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>__free_pages</code></td>
-<td style="text-align:center">传入<code>page</code>结构体，以及<code>order</code></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>free_pages</code></td>
-<td style="text-align:center">传入虚拟地址，以及<code>order</code></td>
-</tr>
-</tbody>
-</table>
-<p><code>free_pages</code>的定义如下：</p>
-<pre><code>[mm/page_alloc.c]
-
-void free_pages(unsigned long addr, unsigned int order)
-{
-    if (addr != 0) {
-        VM_BUG_ON(!virt_addr_valid((void *)addr));
-        __free_pages(virt_to_page((void *)addr), order);
-    }
-}
-</code></pre><p>可以看到<code>free_pages</code>最终调用的是<code>__free_pages</code>。<code>__free_pages</code>的函数实现如下：</p>
-<pre><code>[mm/page_alloc.c __free_pages 函数]
-
-void __free_pages(struct page *page, unsigned int order)
-{                       
-    if (put_page_testzero(page)) {
-        /* 如果order为0，即为1个页面，还给每个cpu维护的本地pagelist,
-         * 并且是当成热页 */
-        if (order == 0)
-            free_hot_cold_page(page, false);
+    while(1)
+    {
+        if(g_flags &gt; 0)
+            a = 0xbeef;
         else
-            __free_pages_ok(page, order);
-    }
-}
-</code></pre><p>如果<code>order</code>为<code>0</code>，即只分配一个页面，就调用<code>free_hot_cold_page</code>：</p>
-<pre><code>void free_hot_cold_page(struct page *page, bool cold)
-{
-    struct zone *zone = page_zone(page);
-    struct per_cpu_pages *pcp;
-    unsigned long flags;
-    unsigned long pfn = page_to_pfn(page);
-    int migratetype;
-
-    if (!free_pcp_prepare(page))
-        return;
-
-    /* 获取迁移类型 */
-    migratetype = get_pfnblock_migratetype(page, pfn);
-
-    set_pcppage_migratetype(page, migratetype);
-    local_irq_save(flags);
-    __count_vm_event(PGFREE);
-
-    /* 每一个cpu维护的list上只有三个类型，不可移动，可移动，可回收
-     * 如果不是这三个类型的话，要特殊处理，ISOLATE这种类型的要还给
-     * buddy，把HIGHATOMIC当成可移动的，以至于我们在需要的时候，
-     * 可以快速的分配到 */
-    if (migratetype &gt;= MIGRATE_PCPTYPES) {
-        if (unlikely(is_migrate_isolate(migratetype))) {
-            free_one_page(zone, page, pfn, 0, migratetype);
-            goto out;
-        }
-        migratetype = MIGRATE_MOVABLE;
-    }
-
-    pcp = &amp;this_cpu_ptr(zone-&gt;pageset)-&gt;pcp;
-    /* 如果是热页，加入到链表的头 */
-    if (!cold)
-        list_add(&amp;page-&gt;lru, &amp;pcp-&gt;lists[migratetype]);
-    /* 如果是冷页，加入到链表的厄尾部 */
-    else
-        list_add_tail(&amp;page-&gt;lru, &amp;pcp-&gt;lists[migratetype]);
-
-    /* 增加这个链表的空页计数 */
-    pcp-&gt;count++;
-
-    /* 如果这个链表中的空页数量超过了high，
-     * 返回batch个给buddy */
-    if (pcp-&gt;count &gt;= pcp-&gt;high) {
-        unsigned long batch = READ_ONCE(pcp-&gt;batch);
-        free_pcppages_bulk(zone, batch, pcp);
-        pcp-&gt;count -= batch;
-    }
-
-out:
-    local_irq_restore(flags);
-}
-</code></pre><p>如果<code>order</code>不为<code>0</code>，即不止一个页面，就调用<code>__free_pages_ok</code>：</p>
-<pre><code>[mm/page_alloc.c]
-
-static void __free_pages_ok(struct page *page, unsigned int order) 
-{
-    unsigned long flags;
-    int migratetype;  
-    unsigned long pfn = page_to_pfn(page);
-
-    if (!free_pages_prepare(page, order, true))
-        return;   
-
-    /* 获取迁移类型 */
-    migratetype = get_pfnblock_migratetype(page, pfn);
-    local_irq_save(flags);
-    __count_vm_events(PGFREE, 1 &lt;&lt; order);
-
-    free_one_page(page_zone(page), page, pfn, order, migratetype); 
-    local_irq_restore(flags);       
-}
-</code></pre><p><code>free_one_page</code>函数实现如下：</p>
-<pre><code>[mm/page_alloc.c free_one_page 函数]
-
-static void free_one_page(struct zone *zone,
-                                struct page *page, unsigned long pfn,
-                                unsigned int order,
-                                int migratetype)
-{
-    spin_lock(&amp;zone-&gt;lock);
-    if (unlikely(has_isolate_pageblock(zone) ||
-            is_migrate_isolate(migratetype))) {
-        migratetype = get_pfnblock_migratetype(page, pfn);
-    }                 
-    __free_one_page(page, pfn, zone, order, migratetype); 
-    spin_unlock(&amp;zone-&gt;lock);       
-}
-</code></pre><p><code>__free_one_page</code>函数实现如下：</p>
-<pre><code>[mm/page_alloc.c __free_one_page 函数]
-
-807 static inline void __free_one_page(struct page *page,
-                unsigned long pfn,
-                struct zone *zone, unsigned int order,
-                int migratetype)
-{
-    unsigned long combined_pfn;
-    unsigned long uninitialized_var(buddy_pfn);
-    struct page *buddy;
-    unsigned int max_order;
-
-    max_order = min_t(unsigned int, MAX_ORDER, pageblock_order + 1);
-
-    VM_BUG_ON(!zone_is_initialized(zone));
-    VM_BUG_ON_PAGE(page-&gt;flags &amp; PAGE_FLAGS_CHECK_AT_PREP, page);
-
-    VM_BUG_ON(migratetype == -1);
-    if (likely(!is_migrate_isolate(migratetype)))
-            __mod_zone_freepage_state(zone, 1 &lt;&lt; order, migratetype);
-
-    VM_BUG_ON_PAGE(pfn &amp; ((1 &lt;&lt; order) - 1), page);
-    VM_BUG_ON_PAGE(bad_range(zone, page), page);
-
-continue_merging:
-        while (order &lt; max_order - 1) {
-            buddy_pfn = __find_buddy_pfn(pfn, order);
-            buddy = page + (buddy_pfn - pfn);
-
-            if (!pfn_valid_within(buddy_pfn))
-                goto done_merging;
-            if (!page_is_buddy(page, buddy, order))
-                goto done_merging;
-
-            if (page_is_guard(buddy)) {
-                clear_page_guard(zone, buddy, order, migratetype);
-            } else {
-                list_del(&amp;buddy-&gt;lru);
-                zone-&gt;free_area[order].nr_free--;
-                rmv_page_order(buddy);
-            }
-            combined_pfn = buddy_pfn &amp; pfn;
-            page = page + (combined_pfn - pfn);
-            pfn = combined_pfn;
-            order++;
-        }
-        if (max_order &lt; MAX_ORDER) {
-
-            if (unlikely(has_isolate_pageblock(zone))) {
-                int buddy_mt;
-
-                buddy_pfn = __find_buddy_pfn(pfn, order);
-                buddy = page + (buddy_pfn - pfn);
-                buddy_mt = get_pageblock_migratetype(buddy);
-
-                if (migratetype != buddy_mt
-                        &amp;&amp; (is_migrate_isolate(migratetype) ||
-                                is_migrate_isolate(buddy_mt)))
-                    goto done_merging;
-            }
-            max_order++;
-            goto continue_merging;
-        }
-
-done_merging:
-    set_page_order(page, order);
-
-    if ((order &lt; MAX_ORDER-2) &amp;&amp; pfn_valid_within(buddy_pfn)) {
-        struct page *higher_page, *higher_buddy;
-        combined_pfn = buddy_pfn &amp; pfn;
-        higher_page = page + (combined_pfn - pfn);
-        buddy_pfn = __find_buddy_pfn(combined_pfn, order + 1);
-        higher_buddy = higher_page + (buddy_pfn - combined_pfn);
-        if (pfn_valid_within(buddy_pfn) &amp;&amp;
-            page_is_buddy(higher_page, higher_buddy, order + 1)) {
-                list_add_tail(&amp;page-&gt;lru,
-                    &amp;zone-&gt;free_area[order].free_list[migratetype]);
-            goto out;
+        {
+            a = 0xfeed;
+            break;
         }
     }
 
-    list_add(&amp;page-&gt;lru, &amp;zone-&gt;free_area[order].free_list[migratetype]);
-out:
-        zone-&gt;free_area[order].nr_free++;
+    return a;
 }
-</code></pre>
+</code></pre><p>普通编译，没有问题：</p>
+<pre><code>Disassembly of section .text:
+
+000100d8 &lt;main&gt;:
+    100d8:    e52db004     push    {fp}        ; (str fp, [sp, #-4]!)
+    100dc:    e28db000     add    fp, sp, #0
+    100e0:    e24dd00c     sub    sp, sp, #12
+    100e4:    e3a03000     mov    r3, #0
+    100e8:    e50b3008     str    r3, [fp, #-8]
+    100ec:    e59f3034     ldr    r3, [pc, #52]    ; 10128 &lt;main+0x50&gt;
+    100f0:    e5933000     ldr    r3, [r3]
+    100f4:    e3530000     cmp    r3, #0
+    100f8:    da000002     ble    10108 &lt;main+0x30&gt;
+    100fc:    e59f3028     ldr    r3, [pc, #40]    ; 1012c &lt;main+0x54&gt;
+    10100:    e50b3008     str    r3, [fp, #-8]
+    10104:    eafffff8     b    100ec &lt;main+0x14&gt;
+    10108:    e59f3020     ldr    r3, [pc, #32]    ; 10130 &lt;main+0x58&gt;
+    1010c:    e50b3008     str    r3, [fp, #-8]
+    10110:    e1a00000     nop            ; (mov r0, r0)
+    10114:    e51b3008     ldr    r3, [fp, #-8]
+    10118:    e1a00003     mov    r0, r3
+    1011c:    e24bd000     sub    sp, fp, #0
+    10120:    e49db004     pop    {fp}        ; (ldr fp, [sp], #4)
+    10124:    e12fff1e     bx    lr
+    10128:    00020134     andeq    r0, r2, r4, lsr r1
+    1012c:    0000beef     andeq    fp, r0, pc, ror #29
+    10130:    0000feed     andeq    pc, r0, sp, ror #29
+
+Disassembly of section .data:
+
+00020134 &lt;g_flags&gt;:
+    20134:    00000043     andeq    r0, r0, r3, asr #32
+</code></pre><p>如果编译的时候加上<code>-O3</code>，汇编代码如下：</p>
+<pre><code>Disassembly of section .text:
+
+000100d8 &lt;main&gt;:
+    100d8:    e59f3014     ldr    r3, [pc, #20]        ; 100f4 &lt;main+0x1c&gt;
+    100dc:    e5933000     ldr    r3, [r3]
+    100e0:    e3530000     cmp    r3, #0                ; 到这个地方，是先读取g_flags的值，在跟0进行比较
+    100e4:    da000000     ble    100ec &lt;main+0x14&gt;
+    100e8:    eafffffe     b    100e8 &lt;main+0x10&gt;   ；有可能卡死再这个地方再也出不来
+    100ec:    e59f0004     ldr    r0, [pc, #4]        ; 100f8 &lt;main+0x20&gt;
+    100f0:    e12fff1e     bx    lr
+    100f4:    000200fc     strdeq    r0, [r2], -ip
+    100f8:    0000feed     andeq    pc, r0, sp, ror #29
+
+Disassembly of section .data:
+
+000200fc &lt;g_flags&gt;:
+    200fc:    00000043     andeq    r0, r0, r3, asr #32
+</code></pre><p>可以看出来，是先读取<code>g_flags</code>的值，再跟0进行比较，在进入的<code>while</code>循环。有可能卡在<code>while</code>循环里。这样子代码变成了如下：<br>​<br>    int g_flags = 0x43;</p>
+<pre><code>int main(void)
+{
+    int tmp = g_flags;
+    int a = 0xfeed;
+
+    while(g_flags) { }
+
+    return a;
+}
+</code></pre><p>这样子即使在另一个线程里修改了全局变量<code>g_flags</code>的值，函数结果也不会发生变化。</p>
+<p>编译器乱序的目的是为了优化执行效率，所以，会有很多造成乱序的原因。上面只是造成乱序的两个例子。</p>
+<h6 id="2-如何让编译器不乱序"><a href="#2-如何让编译器不乱序" class="headerlink" title="2. 如何让编译器不乱序"></a>2. 如何让编译器不乱序</h6><p>让编译器不乱序有几个方法：</p>
+<blockquote>
+<p>A. 编译器编译时不要加优化选项，编译出来的结果是默认不乱序的。<br>B. 在变量上加volatile，有关此变量的语句都不会乱序。volatile是强制编译器不能优化对这些变量的操作。<br>C. 编译器层面的内存屏障<code>asm volatile(&quot;&quot; ::: &quot;memory&quot;);</code> 或者 <code>__asm__ __volatile__ (&quot;&quot; ::: &quot;memory&quot;);</code></p>
+</blockquote>
+<h4 id="Ⅱ-CPU乱序执行"><a href="#Ⅱ-CPU乱序执行" class="headerlink" title="Ⅱ. CPU乱序执行"></a>Ⅱ. CPU乱序执行</h4><h6 id="1-编译器乱序的原因："><a href="#1-编译器乱序的原因：" class="headerlink" title="1. 编译器乱序的原因："></a>1. 编译器乱序的原因：</h6><p>A，由于cache的同步而导致的</p>
+<pre><code>int g_value = 0;
+int g_valueSetflag = 0;
+
+
+void core1_setValue(int value)
+{
+    g_value = value;
+    g_valueSetflag = 1;
+}
+
+
+int core2_waitForValueChange()
+{
+    while(1 ！= g_valueSetflag);
+
+    return g_value;
+}
+</code></pre><p>假设cpu有两个core, core1在执行函数<code>core1_setValue</code>，core2在执行函数<code>core2_waitForValueChange</code>,如果core2在之前访问过<code>g_value</code>，并且把<code>g_value</code>还保持在本地cache里，那么在core1在执行函数<code>core1_setValue</code>的时候，根据MESI，需要把core1本地cache里的<code>g_value</code>更改之外，还需要通知core2，让core2知道本地cache里的<code>g_value</code>已经被改变，并发送回应信号给core1，但是这个过程会很长，cpu为了减小这个时间的影响，会在core2回相应信号给core1前，继续执行下面对<code>g_value</code>没有依赖的语句<code>g_valueSetflag = 1;</code>，这样子在core2看来就会出现返回的<code>g_value</code>跟实际的value不同的情况。</p>
+<p>B，超线程、smt等技术，当一个core在执行一段代码，但是另一个core却闲置时，cpu会把core1上一些独立的没有依赖的语句去放到其他的core上执行。例如：</p>
+<pre><code>if(i &lt; 0)
+{
+    a = b + c;
+}
+else
+{
+    a = d + e;
+}
+</code></pre><p>cpu有时候会让core1执行<code>a = b + c;</code>，core2执行<code>a = d + e;</code>，然后再根据i的值直接去取结果。</p>
+
       
 
       
@@ -972,11 +361,15 @@ out:
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">linux</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">linux kernel</a>
         		</li>
       		 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">memery</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">memeory</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">cache</a>
         		</li>
       		
 		</ul>
@@ -1032,7 +425,7 @@ out:
     <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//pan.baidu.com/share/qrcode?url=https://songyoulin.github.io/2017/06/13/伙伴系统buddy/" alt="微信分享二维码">
+      <img src="//pan.baidu.com/share/qrcode?url=https://songyoulin.github.io/2018/02/12/memory_barrier/" alt="微信分享二维码">
     </div>
 </div>
 
@@ -1046,18 +439,9 @@ out:
   
 <nav id="article-nav">
   
-    <a href="/2017/07/13/自旋锁spinlock/" id="article-nav-newer" class="article-nav-link-wrap">
-      <i class="icon-circle-left"></i>
-      <div class="article-nav-title">
-        
-          自旋锁spinlock
-        
-      </div>
-    </a>
   
-  
-    <a href="/2017/06/12/物理内存相关的三个数据结构pglist_data、zone、page/" id="article-nav-older" class="article-nav-link-wrap">
-      <div class="article-nav-title">物理内存相关的三个数据结构</div>
+    <a href="/2017/08/17/互斥锁mutex/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">mutex互斥锁</div>
       <i class="icon-circle-right"></i>
     </a>
   
